@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>英语小步走 · 从 KET 起步</title>
+  <style>
+    :root {
+      --bg:#f4f6fb; --card:#fff; --text:#1a2233; --muted:#8a94a6;
+      --primary:#4f6ef7; --primary-soft:#eef2ff; --green:#12b76a; --green-soft:#ecfdf3;
+      --orange:#f79009; --orange-soft:#fffaeb; --red:#f04438; --red-soft:#fef3f2;
+      --border:#e7ebf3; --radius:16px; --shadow:0 6px 22px rgba(26,34,51,.06);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5;min-height:100vh;padding-bottom:32px}
+    .wrap{max-width:430px;margin:0 auto}
+    .top{background:linear-gradient(155deg,#4f6ef7,#7b93ff 55%,#a8b8ff);color:#fff;padding:24px 18px 28px;border-radius:0 0 22px 22px}
+    .top .hi{font-size:13px;opacity:.9}
+    .top h1{font-size:22px;font-weight:700;margin:4px 0}
+    .top .sub{font-size:12px;opacity:.88}
+    .hdr-stats{display:grid;grid-template-columns:1.2fr 1.2fr .8fr;gap:8px;margin-top:16px}
+    .hdr-stats .s{background:rgba(255,255,255,.18);border-radius:12px;padding:10px 6px;text-align:center}
+    .hdr-stats .n{font-size:20px;font-weight:700}
+    .hdr-stats .l{font-size:11px;opacity:.92;margin-top:2px}
+    section{margin:12px 14px 0;background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+    .sec-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+    .sec-h h2{font-size:16px;font-weight:700}
+    .sec-h .hint{font-size:12px;color:var(--muted)}
+    .banner{display:none;margin:12px 14px 0;padding:12px 14px;border-radius:12px;background:var(--orange-soft);color:#b54708;font-size:13px;font-weight:600;border:1px solid #f7d070}
+    .banner.show{display:block}
+    .road{list-style:none}
+    .road li{display:flex;gap:10px;align-items:flex-start;padding:8px 0}
+    .road .dot{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:var(--bg);color:var(--muted);border:2px solid var(--border)}
+    .road li.cur .dot{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .road li.pass .dot{background:var(--green);color:#fff;border-color:var(--green)}
+    .road li.lock{opacity:.55}
+    .road .rt{font-size:14px;font-weight:700}
+    .road .rd{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.45}
+    .road .now{font-size:10px;background:var(--green-soft);color:var(--green);padding:1px 6px;border-radius:999px;margin-left:4px;font-weight:700}
+    .pass-box{background:var(--bg);border-radius:12px;padding:10px 12px;margin-top:8px;font-size:12px;color:#445}
+    .pass-box strong{color:var(--primary)}
+    .lights{display:flex;gap:8px;flex-wrap:wrap}
+    .light{flex:1;min-width:95px;background:var(--bg);border-radius:12px;padding:12px 10px;text-align:center;border:1.5px solid var(--border)}
+    .light.on{background:var(--green-soft);border-color:#86efac}
+    .light .emoji{font-size:22px}
+    .light .tn{font-size:13px;font-weight:700;margin-top:4px}
+    .light .td{font-size:11px;color:var(--muted);margin-top:2px}
+    .topic-row{display:flex;gap:8px;flex-wrap:wrap}
+    .topic-btn{flex:1;min-width:90px;border:1.5px solid var(--border);background:var(--bg);border-radius:12px;padding:12px 8px;font-family:inherit;cursor:pointer;text-align:center}
+    .topic-btn .t{font-weight:700;font-size:14px}
+    .topic-btn .e{font-size:11px;color:var(--muted);margin-top:2px}
+    .topic-btn.active{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
+    .check-list{list-style:none}
+    .check-list li{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer}
+    .check-list li:last-child{border-bottom:none}
+    .check-list li.done .step-t{color:var(--muted);text-decoration:line-through}
+    .box{width:24px;height:24px;border-radius:7px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;background:#fff;color:#fff;font-weight:700}
+    .check-list li.done .box{background:var(--green);border-color:var(--green)}
+    .step-t{font-size:14px;font-weight:600;flex:1}
+    .step-d{font-size:11px;color:var(--muted)}
+    .step-go{border:none;background:var(--primary-soft);color:var(--primary);font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;font-family:inherit;cursor:pointer;white-space:nowrap}
+    .btn{border:none;border-radius:12px;font-family:inherit;font-weight:600;font-size:14px;padding:12px 14px;cursor:pointer}
+    .btn:active{opacity:.9;transform:scale(.98)}
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-ghost{background:var(--bg);color:var(--text)}
+    .btn-green{background:var(--green);color:#fff}
+    .btn-orange{background:var(--orange);color:#fff}
+    .btn-full{width:100%}
+    .btn-row{display:flex;gap:8px;margin-top:12px}
+    .btn-row .btn{flex:1}
+    .prog-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .prog-box{background:var(--bg);border-radius:12px;padding:12px;text-align:center}
+    .prog-box .n{font-size:18px;font-weight:700;color:var(--primary)}
+    .prog-box .l{font-size:11px;color:var(--muted);margin-top:2px}
+    .log-list{list-style:none;max-height:200px;overflow-y:auto}
+    .log-list li{padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;gap:8px}
+    .badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--primary-soft);color:var(--primary);height:fit-content}
+    .meta{color:var(--muted);font-size:11px;margin-top:2px}
+    .empty{text-align:center;color:var(--muted);font-size:13px;padding:14px 0}
+    .flow{display:none;position:fixed;inset:0;background:var(--bg);z-index:50;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .flow.show{display:block}
+    .flow-bar{position:sticky;top:0;z-index:2;background:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+    .flow-bar .back{border:none;background:var(--bg);width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer;font-family:inherit}
+    .flow-bar h3{font-size:16px;flex:1}
+    .flow-bar .prog-mini{font-size:12px;color:var(--muted)}
+    .flow-body{max-width:430px;margin:0 auto;padding:16px 14px 40px}
+    .card-block{background:#fff;border-radius:16px;padding:18px 16px;box-shadow:var(--shadow);margin-bottom:12px}
+    .lemma{font-size:26px;font-weight:700;color:var(--primary)}
+    .gloss{font-size:14px;color:var(--muted);margin:4px 0 12px}
+    .family{font-size:12px;color:var(--muted);margin-bottom:10px}
+    .awl-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;margin-left:8px;vertical-align:middle}
+    .phon{font-size:13px;color:var(--muted);margin-left:6px;font-weight:400}
+    .frame{background:var(--primary-soft);border-radius:10px;padding:10px 12px;font-size:14px;margin:8px 0;font-weight:600;color:#334}
+    .tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--primary-soft);color:var(--primary);margin:0 4px 6px 0}
+    .ex{font-size:14px;font-style:italic;color:#333;margin-top:10px;line-height:1.55}
+    .ex-zh{font-size:12px;color:var(--muted);font-style:normal;margin-top:4px}
+    .label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px}
+    textarea{width:100%;min-height:88px;border:1.5px solid var(--border);border-radius:12px;padding:12px;font-family:inherit;font-size:14px;resize:vertical;outline:none}
+    textarea:focus{border-color:var(--primary)}
+    .hint-box{font-size:12px;color:var(--muted);margin-top:8px;background:var(--bg);padding:8px 10px;border-radius:10px}
+    .feedback{margin-top:10px;padding:10px 12px;border-radius:10px;font-size:13px;display:none}
+    .feedback.ok{display:block;background:var(--green-soft);color:var(--green)}
+    .feedback.bad{display:block;background:var(--red-soft);color:var(--red)}
+    .feedback.info{display:block;background:var(--primary-soft);color:var(--primary)}
+    .choice{display:block;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-family:inherit;font-size:14px;cursor:pointer}
+    .choice.correct{border-color:var(--green);background:var(--green-soft)}
+    .choice.wrong{border-color:var(--red);background:var(--red-soft)}
+    .summary-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px}
+    .big-ok{text-align:center;padding:12px 0 8px}
+    .big-ok .emoji{font-size:40px}
+    .big-ok h4{font-size:18px;margin:8px 0 4px}
+    .bank{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .bank button{border:1.5px solid var(--border);background:#fff;border-radius:999px;padding:4px 10px;font-size:13px;font-family:inherit;cursor:pointer}
+    .mode-btn{display:block;width:100%;text-align:left;padding:14px;margin-bottom:8px;border:1.5px solid var(--border);border-radius:14px;background:#fff;font-family:inherit;cursor:pointer}
+    .mode-btn .t{font-weight:700;font-size:15px}.mode-btn .d{font-size:12px;color:var(--muted);margin-top:2px}
+
+    /* Swipe deck */
+    .swipe-hint{text-align:center;font-size:12px;color:var(--muted);margin-bottom:10px}
+    .swipe-hint b.left{color:var(--red)} .swipe-hint b.right{color:var(--green)}
+    .deck{position:relative;height:340px;touch-action:none;user-select:none;-webkit-user-select:none;margin-bottom:8px}
+    .deck-card{
+      position:absolute;inset:0;background:#fff;border-radius:18px;box-shadow:var(--shadow);
+      border:1.5px solid var(--border);padding:20px 18px;overflow:hidden;
+      will-change:transform;cursor:grab;
+    }
+    .deck-card.dragging{cursor:grabbing;transition:none}
+    .deck-card.fly{transition:transform .28s ease-out, opacity .28s ease-out}
+    .deck-card.snap{transition:transform .25s ease-out}
+    .stamp{
+      position:absolute;top:18px;padding:6px 12px;border-radius:10px;font-weight:800;font-size:18px;
+      border:3px solid;opacity:0;pointer-events:none;transform:rotate(-12deg);
+    }
+    .stamp.no{left:16px;color:var(--red);border-color:var(--red)}
+    .stamp.yes{right:16px;color:var(--green);border-color:var(--green);transform:rotate(12deg)}
+    .swipe-btns{display:flex;justify-content:center;gap:28px;margin-top:6px}
+    .swipe-btns button{
+      width:56px;height:56px;border-radius:50%;border:2px solid var(--border);background:#fff;
+      font-size:22px;cursor:pointer;font-family:inherit;box-shadow:var(--shadow);
+    }
+    .swipe-btns .no-btn{color:var(--red);border-color:#fca5a5}
+    .swipe-btns .yes-btn{color:var(--green);border-color:#86efac}
+    .swipe-btns .peek-btn{color:var(--primary);font-size:14px;font-weight:700;width:auto;padding:0 16px;border-radius:28px}
+
+    .toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%) translateY(12px);background:rgba(26,34,51,.92);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:100;max-width:90vw}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    footer{text-align:center;padding:18px;font-size:11px;color:#b0b8c8}
+  </style>
+</head>
+<body>
+  <div class="wrap" id="home">
+    <header class="top">
+      <div class="hi">你好，初一小勇士 👋 一步一步来，你可以的！</div>
+      <h1>英语小步走 🚀</h1>
+      <p class="sub">从 KET 起步 · 目标雅思 8 · 每日硬顶 20 分钟</p>
+      <div class="hdr-stats">
+        <div class="s"><div class="n" id="h-sentences">0</div><div class="l">会用的句子数</div></div>
+        <div class="s"><div class="n" id="h-topics">0/3</div><div class="l">主题点亮</div></div>
+        <div class="s"><div class="n" id="h-streak">0</div><div class="l">连续天数</div></div>
+      </div>
+    </header>
+
+    <div class="banner" id="overdue-banner">⏰ 预计复习超过 12 分钟，请先清复习队列，今日暂停新学。</div>
+
+    <section>
+      <div class="sec-h"><h2>我的英语路线图</h2><span class="hint">长期目标：雅思 8</span></div>
+      <ul class="road">
+        <li class="cur" id="road-s0"><div class="dot">0</div><div>
+          <div class="rt">阶段0 基础启蒙<span class="now" id="s0-badge">当前</span></div>
+          <div class="rd">Pre-A1 / A1 · 每主题 15–25 词块 + 句框</div>
+          <div class="pass-box" id="s0-pass"></div>
+        </div></li>
+        <li class="lock" id="road-s1"><div class="dot" id="s1-dot">🔒</div><div>
+          <div class="rt">阶段1 KET A2<span class="now" id="s1-badge" style="display:none">可解锁</span></div>
+          <div class="rd">目标每主题 40–60 词块（部分内容已预览）</div>
+          <div class="pass-box">过关：长间隔留存 ≥85%（含造句）· 限时选词块 ≥75% · 三主题各 ≥6 句且搭配错 ≤2</div>
+        </div></li>
+        <li class="lock"><div class="dot">🔒</div><div><div class="rt">阶段2 PET</div><div class="rd">B1</div></div></li>
+        <li class="lock"><div class="dot">🔒</div><div><div class="rt">阶段3 FCE / 雅思 5.5–6</div><div class="rd">B2</div></div></li>
+        <li class="lock"><div class="dot">🔒</div><div><div class="rt">阶段4 雅思 7+</div><div class="rd">C1</div></div></li>
+        <li class="lock"><div class="dot">🏆</div><div><div class="rt">目标 雅思 8</div><div class="rd">慢慢来，梦想会实现！</div></div></li>
+      </ul>
+    </section>
+
+    <section>
+      <div class="sec-h"><h2>主题点亮</h2><span class="hint">会用够句子就点亮 ✨</span></div>
+      <div class="lights" id="topic-lights"></div>
+    </section>
+
+    <section>
+      <div class="sec-h"><h2>今日主题</h2><span class="hint">点选后开始学习</span></div>
+      <div class="topic-row" id="topic-row"></div>
+    </section>
+
+    <section>
+      <div class="sec-h"><h2>今日任务</h2><span class="hint" id="task-hint">硬顶 20 分钟</span></div>
+      <ul class="check-list" id="task-list">
+        <li data-step="review"><div class="box">1</div><div style="flex:1"><div class="step-t">复习到期卡</div><div class="step-d">6–8 分钟 · 左滑没记住 / 右滑记住了</div></div><button type="button" class="step-go">开始</button></li>
+        <li data-step="learn"><div class="box">2</div><div style="flex:1"><div class="step-t">新学词块</div><div class="step-d">4–6 个 · 右滑学会了 · 日顶 6</div></div><button type="button" class="step-go">开始</button></li>
+        <li data-step="practice"><div class="box">3</div><div style="flex:1"><div class="step-t">词库造句</div><div class="step-d">4–5 分钟 · 用句框写短句</div></div><button type="button" class="step-go">开始</button></li>
+        <li data-step="wrap"><div class="box">4</div><div style="flex:1"><div class="step-t">收工 1 分钟</div><div class="step-d">看看今天多会了几句 ⭐</div></div><button type="button" class="step-go">查看</button></li>
+      </ul>
+    </section>
+
+    <section>
+      <div class="sec-h"><h2>学习进度</h2><span class="hint">看句子与点亮，不看分数</span></div>
+      <div class="prog-grid">
+        <div class="prog-box"><div class="n" id="p-sentences">0</div><div class="l">会用的句子</div></div>
+        <div class="prog-box"><div class="n" id="p-lit">0/3</div><div class="l">主题点亮</div></div>
+        <div class="prog-box"><div class="n" id="p-due">0</div><div class="l">今日到期</div></div>
+        <div class="prog-box"><div class="n" id="p-new">0</div><div class="l">今日已新学</div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-h"><h2>学习记录</h2><button type="button" class="btn btn-ghost" style="padding:6px 10px;font-size:12px" id="btn-clear-log">清空</button></div>
+      <ul class="log-list" id="log-list"></ul>
+      <div class="empty" id="log-empty">还没有记录，完成一步就会出现～</div>
+    </section>
+    <footer>本地原型 · 数据只存本机 · 从 KET 起步，目标雅思 8</footer>
+  </div>
+
+  <div class="flow" id="flow" aria-hidden="true">
+    <div class="flow-bar">
+      <button type="button" class="back" id="flow-back">←</button>
+      <h3 id="flow-title">学习</h3>
+      <span class="prog-mini" id="flow-prog"></span>
+    </div>
+    <div class="flow-body" id="flow-body"></div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>window.__TOPICS__ = {"version": 3, "level": "阶段0 Pre-A1/A1 → 阶段1 KET A2", "longTermGoal": "IELTS 8", "dailyHardCapMin": 20, "stage0": {"name": "基础启蒙", "cefr": "Pre-A1 / A1", "chunksPerTopic": "15–25", "pass": {"recognition": "≥85% 且间隔 ≥2 天", "sentencesPerTopic": 5, "streakDays": 5}}, "stage1": {"name": "KET", "cefr": "A2", "chunksPerTopicTarget": "40–60", "pass": {"longIntervalRetention": "≥85% 且含产出掌握", "timedChunkSelect": "≥75%", "sentencesPerTopic": 6, "maxCollocationErrors": 2}}, "topics": [{"id": "school", "name": "学校生活", "nameEn": "School", "stage0Target": 20, "stage1Target": 50, "chunks": [{"id": "sch-01", "lemma": "teacher", "wordFamily": ["teach", "teacher"], "gloss": "老师", "phonetic": "/ˈtiːtʃə/", "collocations": ["my teacher", "a kind teacher"], "sentenceFrame": "My ___ is ___.", "example": "My English teacher is kind.", "exampleZh": "我的英语老师很和蔼。", "productionPrompt": "用 teacher 写一句关于你老师的话。", "productionHint": ["teacher"], "wordBank": ["My", "teacher", "is", "kind", "funny", "tall"], "stage": 0}, {"id": "sch-02", "lemma": "classroom", "wordFamily": ["class", "classroom"], "gloss": "教室", "phonetic": "/ˈklɑːsruːm/", "collocations": ["in the classroom", "a big classroom"], "sentenceFrame": "Our classroom is ___.", "example": "Our classroom is big.", "exampleZh": "我们的教室很大。", "productionPrompt": "用 classroom 写一句关于教室的话。", "productionHint": ["classroom"], "wordBank": ["Our", "classroom", "is", "big", "clean", "bright"], "stage": 0}, {"id": "sch-03", "lemma": "homework", "wordFamily": ["homework"], "gloss": "家庭作业", "phonetic": "/ˈhəʊmwɜːk/", "collocations": ["do homework", "finish homework"], "sentenceFrame": "I ___ my homework ___.", "example": "I do my homework after dinner.", "exampleZh": "我晚饭后做作业。", "productionPrompt": "用 do homework 写你什么时候做作业。", "productionHint": ["homework"], "wordBank": ["I", "do", "my", "homework", "after", "school", "dinner"], "stage": 0}, {"id": "sch-04", "lemma": "subject", "wordFamily": ["subject"], "gloss": "科目", "phonetic": "/ˈsʌbdʒɪkt/", "collocations": ["favourite subject", "best subject"], "sentenceFrame": "My favourite subject is ___.", "example": "My favourite subject is maths.", "exampleZh": "我最喜欢的科目是数学。", "productionPrompt": "用 favourite subject 写你最喜欢的科目。", "productionHint": ["subject"], "wordBank": ["My", "favourite", "subject", "is", "English", "maths", "art"], "stage": 0}, {"id": "sch-05", "lemma": "lesson", "wordFamily": ["lesson"], "gloss": "课", "phonetic": "/ˈlesn/", "collocations": ["have a lesson", "English lesson"], "sentenceFrame": "We have a ___ lesson today.", "example": "We have an English lesson today.", "exampleZh": "我们今天有英语课。", "productionPrompt": "用 lesson 写今天上了什么课。", "productionHint": ["lesson"], "wordBank": ["We", "have", "a", "lesson", "today", "English", "PE"], "stage": 0}, {"id": "sch-06", "lemma": "friend", "wordFamily": ["friend", "friendly"], "gloss": "朋友", "phonetic": "/frend/", "collocations": ["best friend", "make friends"], "sentenceFrame": "___ is my best friend.", "example": "He is my best friend.", "exampleZh": "他是我最好的朋友。", "productionPrompt": "用 best friend 写关于朋友的话。", "productionHint": ["friend"], "wordBank": ["is", "my", "best", "friend", "He", "She"], "stage": 0}, {"id": "sch-07", "lemma": "break", "wordFamily": ["break"], "gloss": "课间", "phonetic": "/breɪk/", "collocations": ["at break time", "a short break"], "sentenceFrame": "I ___ at break time.", "example": "I play football at break time.", "exampleZh": "我课间踢足球。", "productionPrompt": "用 break time 写课间做什么。", "productionHint": ["break"], "wordBank": ["I", "play", "at", "break", "time", "read", "chat"], "stage": 0}, {"id": "sch-08", "lemma": "test", "wordFamily": ["test"], "gloss": "测验", "phonetic": "/test/", "collocations": ["a maths test", "pass the test"], "sentenceFrame": "I have a ___ test.", "example": "I have a maths test today.", "exampleZh": "我今天有数学测验。", "productionPrompt": "用 test 写一句关于测验的话。", "productionHint": ["test"], "wordBank": ["I", "have", "a", "test", "today", "tomorrow", "maths"], "stage": 0}, {"id": "sch-09", "lemma": "library", "wordFamily": ["library"], "gloss": "图书馆", "phonetic": "/ˈlaɪbrəri/", "collocations": ["school library", "in the library"], "sentenceFrame": "I ___ in the library.", "example": "I read books in the library.", "exampleZh": "我在图书馆看书。", "productionPrompt": "用 library 写你在图书馆做什么。", "productionHint": ["library"], "wordBank": ["I", "read", "books", "in", "the", "library"], "stage": 0}, {"id": "sch-10", "lemma": "student", "wordFamily": ["student", "study"], "gloss": "学生", "phonetic": "/ˈstjuːdnt/", "collocations": ["a good student", "school student"], "sentenceFrame": "I am a ___.", "example": "I am a Grade 7 student.", "exampleZh": "我是初一学生。", "productionPrompt": "用 student 介绍你自己。", "productionHint": ["student"], "wordBank": ["I", "am", "a", "student", "Grade", "7"], "stage": 0}, {"id": "sch-11", "lemma": "book", "wordFamily": ["book", "books"], "gloss": "书", "phonetic": "/bʊk/", "collocations": ["read a book", "English book"], "sentenceFrame": "I have an ___ book.", "example": "I have an English book.", "exampleZh": "我有一本英语书。", "productionPrompt": "用 book 写关于书的话。", "productionHint": ["book"], "wordBank": ["I", "have", "read", "a", "book", "English"], "stage": 0}, {"id": "sch-12", "lemma": "desk", "wordFamily": ["desk"], "gloss": "课桌", "phonetic": "/desk/", "collocations": ["at my desk", "a new desk"], "sentenceFrame": "My books are on my ___.", "example": "My books are on my desk.", "exampleZh": "我的书在课桌上。", "productionPrompt": "用 desk 写一句。", "productionHint": ["desk"], "wordBank": ["My", "books", "are", "on", "my", "desk"], "stage": 0}, {"id": "sch-13", "lemma": "bag", "wordFamily": ["bag"], "gloss": "书包", "phonetic": "/bæɡ/", "collocations": ["school bag", "in my bag"], "sentenceFrame": "My ___ is heavy today.", "example": "My school bag is heavy.", "exampleZh": "我的书包很重。", "productionPrompt": "用 bag 写关于书包的话。", "productionHint": ["bag"], "wordBank": ["My", "school", "bag", "is", "heavy", "new", "blue"], "stage": 0}, {"id": "sch-14", "lemma": "pencil", "wordFamily": ["pencil", "pen"], "gloss": "铅笔", "phonetic": "/ˈpensl/", "collocations": ["a pencil", "write with a pencil"], "sentenceFrame": "I write with a ___.", "example": "I write with a pencil.", "exampleZh": "我用铅笔写字。", "productionPrompt": "用 pencil 写一句。", "productionHint": ["pencil"], "wordBank": ["I", "write", "with", "a", "pencil", "pen"], "stage": 0}, {"id": "sch-15", "lemma": "ask", "wordFamily": ["ask", "asks"], "gloss": "问", "phonetic": "/ɑːsk/", "collocations": ["ask a question", "ask the teacher"], "sentenceFrame": "I ___ the teacher a question.", "example": "I ask the teacher a question.", "exampleZh": "我问老师一个问题。", "productionPrompt": "用 ask 写你问谁问题。", "productionHint": ["ask"], "wordBank": ["I", "ask", "the", "teacher", "a", "question"], "stage": 0}, {"id": "sch-16", "lemma": "answer", "wordFamily": ["answer"], "gloss": "回答", "phonetic": "/ˈɑːnsə/", "collocations": ["answer the question", "give an answer"], "sentenceFrame": "I can ___ the question.", "example": "I can answer the question.", "exampleZh": "我能回答这个问题。", "productionPrompt": "用 answer 写一句。", "productionHint": ["answer"], "wordBank": ["I", "can", "answer", "the", "question"], "stage": 0}, {"id": "sch-17", "lemma": "late", "wordFamily": ["late"], "gloss": "迟到的", "phonetic": "/leɪt/", "collocations": ["be late", "arrive late"], "sentenceFrame": "Don't be ___ for school.", "example": "Don't be late for school.", "exampleZh": "上学不要迟到。", "productionPrompt": "用 late 写一句提醒。", "productionHint": ["late"], "wordBank": ["Don't", "be", "late", "for", "school", "class"], "stage": 0}, {"id": "sch-18", "lemma": "listen", "wordFamily": ["listen"], "gloss": "听", "phonetic": "/ˈlɪsn/", "collocations": ["listen to the teacher", "listen carefully"], "sentenceFrame": "Please ___ to the teacher.", "example": "Please listen to the teacher.", "exampleZh": "请听老师讲。", "productionPrompt": "用 listen 写一句课堂用语。", "productionHint": ["listen"], "wordBank": ["Please", "listen", "to", "the", "teacher"], "stage": 0}, {"id": "sch-19", "lemma": "read", "wordFamily": ["read", "reading"], "gloss": "读", "phonetic": "/riːd/", "collocations": ["read a story", "read aloud"], "sentenceFrame": "I ___ English every day.", "example": "I read English every day.", "exampleZh": "我每天读英语。", "productionPrompt": "用 read 写你读什么。", "productionHint": ["read"], "wordBank": ["I", "read", "English", "books", "every", "day"], "stage": 0}, {"id": "sch-20", "lemma": "write", "wordFamily": ["write", "writing"], "gloss": "写", "phonetic": "/raɪt/", "collocations": ["write a sentence", "write in English"], "sentenceFrame": "I ___ in my notebook.", "example": "I write in my notebook.", "exampleZh": "我在笔记本上写字。", "productionPrompt": "用 write 写一句。", "productionHint": ["write"], "wordBank": ["I", "write", "in", "my", "notebook", "English"], "stage": 0}, {"id": "sch-s1-01", "lemma": "classmate", "wordFamily": ["classmate"], "gloss": "同班同学", "phonetic": "/ˈklɑːsmeɪt/", "collocations": ["my classmate", "new classmate"], "sentenceFrame": "___ is my classmate.", "example": "She is my classmate.", "exampleZh": "她是我的同班同学。", "productionPrompt": "用 classmate 写一句。", "productionHint": ["classmate"], "wordBank": ["is", "my", "classmate", "He", "She"], "stage": 1}, {"id": "sch-s1-02", "lemma": "uniform", "wordFamily": ["uniform"], "gloss": "校服", "phonetic": "/ˈjuːnɪfɔːm/", "collocations": ["school uniform", "wear a uniform"], "sentenceFrame": "I wear a ___ to school.", "example": "I wear a uniform to school.", "exampleZh": "我穿校服去上学。", "productionPrompt": "用 uniform 写一句。", "productionHint": ["uniform"], "wordBank": ["I", "wear", "a", "uniform", "to", "school"], "stage": 1}, {"id": "sch-s1-03", "lemma": "project", "wordFamily": ["project"], "gloss": "课题；项目", "phonetic": "/ˈprɒdʒekt/", "collocations": ["a school project", "group project"], "sentenceFrame": "We have a group ___.", "example": "We have a group project.", "exampleZh": "我们有一个小组课题。", "productionPrompt": "用 project 写一句。", "productionHint": ["project"], "wordBank": ["We", "have", "a", "group", "project"], "stage": 1, "awl": true, "badge": "进阶词"}, {"id": "sch-s1-04", "lemma": "timetable", "wordFamily": ["timetable"], "gloss": "课程表", "phonetic": "/ˈtaɪmteɪbl/", "collocations": ["school timetable", "check the timetable"], "sentenceFrame": "Look at the ___.", "example": "Look at the timetable.", "exampleZh": "看看课程表。", "productionPrompt": "用 timetable 写一句。", "productionHint": ["timetable"], "wordBank": ["Look", "at", "the", "timetable", "my"], "stage": 1}, {"id": "sch-s1-05", "lemma": "recess", "wordFamily": ["recess"], "gloss": "课间休息", "phonetic": "/rɪˈses/", "collocations": ["during recess", "at recess"], "sentenceFrame": "I eat a snack at ___.", "example": "I eat a snack at recess.", "exampleZh": "课间我吃零食。", "productionPrompt": "用 recess 写一句。", "productionHint": ["recess"], "wordBank": ["I", "eat", "a", "snack", "at", "recess"], "stage": 1}, {"id": "sch-awl-02", "lemma": "require", "wordFamily": ["require", "required"], "gloss": "需要（进阶）", "phonetic": "/rɪˈkwaɪə/", "collocations": ["require help", "required book"], "sentenceFrame": "We ___ help.", "example": "We require help.", "exampleZh": "我们需要帮助。", "productionPrompt": "（进阶词·只认不考造句）", "productionHint": ["require"], "wordBank": ["We", "require", "help"], "stage": 0, "awl": true, "badge": "进阶词"}]}, {"id": "family", "name": "家庭与日常", "nameEn": "Family & Daily", "stage0Target": 20, "stage1Target": 50, "chunks": [{"id": "fam-01", "lemma": "family", "wordFamily": ["family"], "gloss": "家庭", "phonetic": "/ˈfæməli/", "collocations": ["my family", "a happy family"], "sentenceFrame": "There are ___ people in my family.", "example": "There are four people in my family.", "exampleZh": "我家有四口人。", "productionPrompt": "用 family 介绍你家有几口人。", "productionHint": ["family"], "wordBank": ["There", "are", "people", "in", "my", "family", "three", "four"], "stage": 0}, {"id": "fam-02", "lemma": "get up", "wordFamily": ["get up"], "gloss": "起床", "phonetic": "/ɡet ʌp/", "collocations": ["get up early", "get up at seven"], "sentenceFrame": "I get up at ___.", "example": "I get up at seven.", "exampleZh": "我七点起床。", "productionPrompt": "用 get up 写你几点起床。", "productionHint": ["get up"], "wordBank": ["I", "get", "up", "at", "six", "seven", "o'clock"], "stage": 0}, {"id": "fam-03", "lemma": "breakfast", "wordFamily": ["breakfast"], "gloss": "早餐", "phonetic": "/ˈbrekfəst/", "collocations": ["have breakfast", "eat breakfast"], "sentenceFrame": "I have breakfast with ___.", "example": "I have breakfast with my mum.", "exampleZh": "我和妈妈一起吃早餐。", "productionPrompt": "用 have breakfast 写一句。", "productionHint": ["breakfast"], "wordBank": ["I", "have", "breakfast", "with", "my", "mum", "eggs"], "stage": 0}, {"id": "fam-04", "lemma": "brother", "wordFamily": ["brother", "sister"], "gloss": "兄弟", "phonetic": "/ˈbrʌðə/", "collocations": ["little brother", "older sister"], "sentenceFrame": "My ___ is ___ years old.", "example": "My little brother is five.", "exampleZh": "我弟弟五岁。", "productionPrompt": "用 brother 或 sister 写家人。", "productionHint": ["brother", "sister"], "wordBank": ["My", "brother", "sister", "is", "years", "old"], "stage": 0}, {"id": "fam-05", "lemma": "help", "wordFamily": ["help"], "gloss": "帮助", "phonetic": "/help/", "collocations": ["help my mum", "help at home"], "sentenceFrame": "I help ___ at home.", "example": "I help my mum at home.", "exampleZh": "我在家帮妈妈。", "productionPrompt": "用 help 写你怎么帮忙。", "productionHint": ["help"], "wordBank": ["I", "help", "my", "mum", "dad", "clean", "cook"], "stage": 0}, {"id": "fam-06", "lemma": "weekend", "wordFamily": ["weekend"], "gloss": "周末", "phonetic": "/ˌwiːkˈend/", "collocations": ["at the weekend", "this weekend"], "sentenceFrame": "At the weekend I ___.", "example": "At the weekend I play games.", "exampleZh": "周末我玩游戏。", "productionPrompt": "用 at the weekend 写周末做什么。", "productionHint": ["weekend"], "wordBank": ["At", "the", "weekend", "I", "play", "visit", "read"], "stage": 0}, {"id": "fam-07", "lemma": "bed", "wordFamily": ["bed"], "gloss": "床", "phonetic": "/bed/", "collocations": ["go to bed", "in bed"], "sentenceFrame": "I go to bed at ___.", "example": "I go to bed at nine.", "exampleZh": "我九点睡觉。", "productionPrompt": "用 go to bed 写几点睡觉。", "productionHint": ["bed"], "wordBank": ["I", "go", "to", "bed", "at", "nine", "ten"], "stage": 0}, {"id": "fam-08", "lemma": "clean", "wordFamily": ["clean"], "gloss": "打扫；干净", "phonetic": "/kliːn/", "collocations": ["clean my room", "keep clean"], "sentenceFrame": "I clean my room on ___.", "example": "I clean my room on Sunday.", "exampleZh": "我周日打扫房间。", "productionPrompt": "用 clean 写什么时候打扫。", "productionHint": ["clean"], "wordBank": ["I", "clean", "my", "room", "on", "Sunday"], "stage": 0}, {"id": "fam-09", "lemma": "pet", "wordFamily": ["pet"], "gloss": "宠物", "phonetic": "/pet/", "collocations": ["have a pet", "my pet cat"], "sentenceFrame": "I have a pet ___.", "example": "I have a pet cat.", "exampleZh": "我有一只宠物猫。", "productionPrompt": "用 pet 写你想要/拥有的宠物。", "productionHint": ["pet"], "wordBank": ["I", "have", "want", "a", "pet", "cat", "dog"], "stage": 0}, {"id": "fam-10", "lemma": "mother", "wordFamily": ["mother", "mum"], "gloss": "妈妈", "phonetic": "/ˈmʌðə/", "collocations": ["my mum", "love my mother"], "sentenceFrame": "My mum is ___.", "example": "My mum is a doctor.", "exampleZh": "我妈妈是医生。", "productionPrompt": "用 mum / mother 介绍妈妈。", "productionHint": ["mum", "mother"], "wordBank": ["My", "mum", "is", "kind", "a", "teacher", "doctor"], "stage": 0}, {"id": "fam-11", "lemma": "father", "wordFamily": ["father", "dad"], "gloss": "爸爸", "phonetic": "/ˈfɑːðə/", "collocations": ["my dad", "with my father"], "sentenceFrame": "My dad likes ___.", "example": "My dad likes football.", "exampleZh": "我爸爸喜欢足球。", "productionPrompt": "用 dad / father 写一句。", "productionHint": ["dad", "father"], "wordBank": ["My", "dad", "likes", "football", "cooking", "reading"], "stage": 0}, {"id": "fam-12", "lemma": "home", "wordFamily": ["home"], "gloss": "家", "phonetic": "/həʊm/", "collocations": ["at home", "go home"], "sentenceFrame": "I go home at ___.", "example": "I go home at five.", "exampleZh": "我五点回家。", "productionPrompt": "用 go home 写你几点回家。", "productionHint": ["home"], "wordBank": ["I", "go", "home", "at", "five", "four"], "stage": 0}, {"id": "fam-13", "lemma": "dinner", "wordFamily": ["dinner"], "gloss": "晚餐", "phonetic": "/ˈdɪnə/", "collocations": ["have dinner", "dinner time"], "sentenceFrame": "We have dinner at ___.", "example": "We have dinner at six.", "exampleZh": "我们六点吃晚饭。", "productionPrompt": "用 have dinner 写一句。", "productionHint": ["dinner"], "wordBank": ["We", "have", "dinner", "at", "six", "seven"], "stage": 0}, {"id": "fam-14", "lemma": "wash", "wordFamily": ["wash"], "gloss": "洗", "phonetic": "/wɒʃ/", "collocations": ["wash my hands", "wash the dishes"], "sentenceFrame": "I wash my ___ before meals.", "example": "I wash my hands before meals.", "exampleZh": "饭前我洗手。", "productionPrompt": "用 wash 写一句卫生习惯。", "productionHint": ["wash"], "wordBank": ["I", "wash", "my", "hands", "before", "meals"], "stage": 0}, {"id": "fam-15", "lemma": "morning", "wordFamily": ["morning"], "gloss": "早上", "phonetic": "/ˈmɔːnɪŋ/", "collocations": ["in the morning", "good morning"], "sentenceFrame": "In the morning I ___.", "example": "In the morning I brush my teeth.", "exampleZh": "早上我刷牙。", "productionPrompt": "用 in the morning 写你做什么。", "productionHint": ["morning"], "wordBank": ["In", "the", "morning", "I", "brush", "eat", "run"], "stage": 0}, {"id": "fam-16", "lemma": "evening", "wordFamily": ["evening"], "gloss": "晚上", "phonetic": "/ˈiːvnɪŋ/", "collocations": ["in the evening", "this evening"], "sentenceFrame": "In the evening I ___.", "example": "In the evening I do homework.", "exampleZh": "晚上我做作业。", "productionPrompt": "用 in the evening 写一句。", "productionHint": ["evening"], "wordBank": ["In", "the", "evening", "I", "do", "homework", "read"], "stage": 0}, {"id": "fam-17", "lemma": "busy", "wordFamily": ["busy"], "gloss": "忙碌的", "phonetic": "/ˈbɪzi/", "collocations": ["a busy day", "be busy"], "sentenceFrame": "I am busy on ___.", "example": "I am busy on Monday.", "exampleZh": "我周一很忙。", "productionPrompt": "用 busy 写哪天忙。", "productionHint": ["busy"], "wordBank": ["I", "am", "busy", "on", "Monday", "weekday"], "stage": 0}, {"id": "fam-18", "lemma": "live", "wordFamily": ["live"], "gloss": "住", "phonetic": "/lɪv/", "collocations": ["live in", "live with"], "sentenceFrame": "I live in ___.", "example": "I live in a big city.", "exampleZh": "我住在一个大城市。", "productionPrompt": "用 live in 写你住哪里。", "productionHint": ["live"], "wordBank": ["I", "live", "in", "city", "town", "a", "city"], "stage": 0}, {"id": "fam-19", "lemma": "love", "wordFamily": ["love"], "gloss": "爱", "phonetic": "/lʌv/", "collocations": ["love my family", "love reading"], "sentenceFrame": "I love my ___.", "example": "I love my family.", "exampleZh": "我爱我的家人。", "productionPrompt": "用 love 写你爱什么。", "productionHint": ["love"], "wordBank": ["I", "love", "my", "family", "mum", "reading"], "stage": 0}, {"id": "fam-20", "lemma": "tired", "wordFamily": ["tired"], "gloss": "累的", "phonetic": "/ˈtaɪəd/", "collocations": ["feel tired", "very tired"], "sentenceFrame": "I feel tired after ___.", "example": "I feel tired after school.", "exampleZh": "放学后我感到累。", "productionPrompt": "用 tired 写什么时候累。", "productionHint": ["tired"], "wordBank": ["I", "feel", "tired", "after", "school", "PE"], "stage": 0}, {"id": "fam-s1-01", "lemma": "neighbour", "wordFamily": ["neighbour"], "gloss": "邻居", "phonetic": "/ˈneɪbə/", "collocations": ["my neighbour", "friendly neighbour"], "sentenceFrame": "My ___ is friendly.", "example": "My neighbour is friendly.", "exampleZh": "我的邻居很友好。", "productionPrompt": "用 neighbour 写一句。", "productionHint": ["neighbour"], "wordBank": ["My", "neighbour", "is", "friendly", "kind"], "stage": 1}, {"id": "fam-s1-02", "lemma": "chores", "wordFamily": ["chore", "chores"], "gloss": "家务", "phonetic": "/tʃɔːz/", "collocations": ["do chores", "household chores"], "sentenceFrame": "I do ___ on Sunday.", "example": "I do chores on Sunday.", "exampleZh": "我周日做家务。", "productionPrompt": "用 chores 写一句。", "productionHint": ["chores"], "wordBank": ["I", "do", "chores", "on", "Sunday"], "stage": 1}, {"id": "fam-s1-03", "lemma": "routine", "wordFamily": ["routine"], "gloss": "日常安排", "phonetic": "/ruːˈtiːn/", "collocations": ["daily routine", "morning routine"], "sentenceFrame": "This is my morning ___.", "example": "This is my morning routine.", "exampleZh": "这是我的晨间安排。", "productionPrompt": "用 routine 写一句。", "productionHint": ["routine"], "wordBank": ["This", "is", "my", "morning", "routine"], "stage": 1, "awl": true, "badge": "进阶词"}, {"id": "fam-s1-04", "lemma": "relative", "wordFamily": ["relative"], "gloss": "亲戚", "phonetic": "/ˈrelətɪv/", "collocations": ["visit relatives", "close relative"], "sentenceFrame": "We visit ___ at New Year.", "example": "We visit relatives at New Year.", "exampleZh": "新年我们走亲戚。", "productionPrompt": "用 relatives 写一句。", "productionHint": ["relative"], "wordBank": ["We", "visit", "relatives", "at", "New", "Year"], "stage": 1}, {"id": "fam-awl-02", "lemma": "period", "wordFamily": ["period"], "gloss": "一段时间（进阶）", "phonetic": "/ˈpɪəriəd/", "collocations": ["a short period", "period of time"], "sentenceFrame": "I rest for a short ___.", "example": "I rest for a short period.", "exampleZh": "我休息一小段时间。", "productionPrompt": "（进阶词·只认不考造句）", "productionHint": ["period"], "wordBank": ["I", "rest", "for", "a", "short", "period"], "stage": 0, "awl": true, "badge": "进阶词"}]}, {"id": "food", "name": "食物与爱好", "nameEn": "Food & Hobbies", "stage0Target": 20, "stage1Target": 50, "chunks": [{"id": "food-01", "lemma": "like", "wordFamily": ["like"], "gloss": "喜欢", "phonetic": "/laɪk/", "collocations": ["like apples", "like it very much"], "sentenceFrame": "I like ___ very much.", "example": "I like apples very much.", "exampleZh": "我非常喜欢苹果。", "productionPrompt": "用 like 写你喜欢吃什么。", "productionHint": ["like"], "wordBank": ["I", "like", "very", "much", "noodles", "rice", "apples"], "stage": 0}, {"id": "food-02", "lemma": "delicious", "wordFamily": ["delicious"], "gloss": "美味的", "phonetic": "/dɪˈlɪʃəs/", "collocations": ["delicious food", "taste delicious"], "sentenceFrame": "This ___ is delicious.", "example": "This cake is delicious.", "exampleZh": "这个蛋糕真好吃。", "productionPrompt": "用 delicious 写好吃的食物。", "productionHint": ["delicious"], "wordBank": ["This", "is", "delicious", "cake", "noodles", "soup"], "stage": 0}, {"id": "food-03", "lemma": "drink", "wordFamily": ["drink"], "gloss": "喝；饮料", "phonetic": "/drɪŋk/", "collocations": ["drink water", "a cold drink"], "sentenceFrame": "I drink ___ every day.", "example": "I drink water every day.", "exampleZh": "我每天喝水。", "productionPrompt": "用 drink 写你常喝什么。", "productionHint": ["drink"], "wordBank": ["I", "drink", "milk", "water", "juice", "every", "day"], "stage": 0}, {"id": "food-04", "lemma": "hobby", "wordFamily": ["hobby"], "gloss": "爱好", "phonetic": "/ˈhɒbi/", "collocations": ["my hobby", "have a hobby"], "sentenceFrame": "My hobby is ___.", "example": "My hobby is drawing.", "exampleZh": "我的爱好是画画。", "productionPrompt": "用 My hobby is ___ 写爱好。", "productionHint": ["hobby"], "wordBank": ["My", "hobby", "is", "reading", "drawing", "swimming"], "stage": 0}, {"id": "food-05", "lemma": "play", "wordFamily": ["play"], "gloss": "玩；弹奏", "phonetic": "/pleɪ/", "collocations": ["play football", "play the piano"], "sentenceFrame": "I play ___ on Fridays.", "example": "I play the piano on Fridays.", "exampleZh": "我周五弹钢琴。", "productionPrompt": "用 play 写你会玩什么。", "productionHint": ["play"], "wordBank": ["I", "play", "football", "basketball", "the", "piano"], "stage": 0}, {"id": "food-06", "lemma": "music", "wordFamily": ["music"], "gloss": "音乐", "phonetic": "/ˈmjuːzɪk/", "collocations": ["listen to music", "pop music"], "sentenceFrame": "I listen to music in the ___.", "example": "I listen to music in the evening.", "exampleZh": "我晚上听音乐。", "productionPrompt": "用 listen to music 写一句。", "productionHint": ["music"], "wordBank": ["I", "listen", "to", "music", "in", "the", "evening"], "stage": 0}, {"id": "food-07", "lemma": "good at", "wordFamily": ["good", "better"], "gloss": "擅长", "phonetic": "/ɡʊd æt/", "collocations": ["good at English", "good at sports"], "sentenceFrame": "I am good at ___.", "example": "I am good at swimming.", "exampleZh": "我擅长游泳。", "productionPrompt": "用 good at 写你擅长什么。", "productionHint": ["good at"], "wordBank": ["I", "am", "good", "at", "drawing", "running", "maths"], "stage": 0}, {"id": "food-08", "lemma": "hungry", "wordFamily": ["hungry"], "gloss": "饿的", "phonetic": "/ˈhʌŋɡri/", "collocations": ["feel hungry", "very hungry"], "sentenceFrame": "I am hungry after ___.", "example": "I am hungry after PE.", "exampleZh": "体育课后我很饿。", "productionPrompt": "用 hungry 写什么时候饿。", "productionHint": ["hungry"], "wordBank": ["I", "am", "hungry", "after", "school", "PE"], "stage": 0}, {"id": "food-09", "lemma": "fruit", "wordFamily": ["fruit"], "gloss": "水果", "phonetic": "/fruːt/", "collocations": ["fresh fruit", "eat fruit"], "sentenceFrame": "My favourite fruit is ___.", "example": "My favourite fruit is banana.", "exampleZh": "我最喜欢的水果是香蕉。", "productionPrompt": "用 fruit 写喜欢的水果。", "productionHint": ["fruit"], "wordBank": ["My", "favourite", "fruit", "is", "banana", "orange", "apple"], "stage": 0}, {"id": "food-10", "lemma": "rice", "wordFamily": ["rice"], "gloss": "米饭", "phonetic": "/raɪs/", "collocations": ["eat rice", "a bowl of rice"], "sentenceFrame": "I eat rice for ___.", "example": "I eat rice for lunch.", "exampleZh": "我午饭吃米饭。", "productionPrompt": "用 rice 写一句。", "productionHint": ["rice"], "wordBank": ["I", "eat", "rice", "for", "lunch", "dinner"], "stage": 0}, {"id": "food-11", "lemma": "noodles", "wordFamily": ["noodle", "noodles"], "gloss": "面条", "phonetic": "/ˈnuːdlz/", "collocations": ["eat noodles", "bowl of noodles"], "sentenceFrame": "I like ___ noodles.", "example": "I like beef noodles.", "exampleZh": "我喜欢牛肉面。", "productionPrompt": "用 noodles 写一句。", "productionHint": ["noodles"], "wordBank": ["I", "like", "eat", "noodles", "beef", "egg"], "stage": 0}, {"id": "food-12", "lemma": "egg", "wordFamily": ["egg", "eggs"], "gloss": "鸡蛋", "phonetic": "/eɡ/", "collocations": ["an egg", "fried eggs"], "sentenceFrame": "I have an egg for ___.", "example": "I have an egg for breakfast.", "exampleZh": "我早餐吃一个鸡蛋。", "productionPrompt": "用 egg 写早餐。", "productionHint": ["egg"], "wordBank": ["I", "have", "an", "egg", "for", "breakfast"], "stage": 0}, {"id": "food-13", "lemma": "milk", "wordFamily": ["milk"], "gloss": "牛奶", "phonetic": "/mɪlk/", "collocations": ["drink milk", "a glass of milk"], "sentenceFrame": "I drink milk in the ___.", "example": "I drink milk in the morning.", "exampleZh": "我早上喝牛奶。", "productionPrompt": "用 milk 写一句。", "productionHint": ["milk"], "wordBank": ["I", "drink", "milk", "in", "the", "morning"], "stage": 0}, {"id": "food-14", "lemma": "sweet", "wordFamily": ["sweet"], "gloss": "甜的", "phonetic": "/swiːt/", "collocations": ["sweet cake", "too sweet"], "sentenceFrame": "This cake is too ___.", "example": "This cake is too sweet.", "exampleZh": "这蛋糕太甜了。", "productionPrompt": "用 sweet 写一句。", "productionHint": ["sweet"], "wordBank": ["This", "is", "too", "sweet", "cake", "juice"], "stage": 0}, {"id": "food-15", "lemma": "cook", "wordFamily": ["cook", "cooking"], "gloss": "烹饪", "phonetic": "/kʊk/", "collocations": ["cook dinner", "learn to cook"], "sentenceFrame": "My mum can cook ___.", "example": "My mum can cook well.", "exampleZh": "我妈妈很会做饭。", "productionPrompt": "用 cook 写谁会做饭。", "productionHint": ["cook"], "wordBank": ["My", "mum", "can", "cook", "well", "noodles"], "stage": 0}, {"id": "food-16", "lemma": "sport", "wordFamily": ["sport", "sports"], "gloss": "运动", "phonetic": "/spɔːt/", "collocations": ["play sports", "favourite sport"], "sentenceFrame": "My favourite sport is ___.", "example": "My favourite sport is football.", "exampleZh": "我最喜欢的运动是足球。", "productionPrompt": "用 sport 写喜欢的运动。", "productionHint": ["sport"], "wordBank": ["My", "favourite", "sport", "is", "football", "running"], "stage": 0}, {"id": "food-17", "lemma": "draw", "wordFamily": ["draw", "drawing"], "gloss": "画画", "phonetic": "/drɔː/", "collocations": ["draw a picture", "like drawing"], "sentenceFrame": "I like to draw ___.", "example": "I like to draw animals.", "exampleZh": "我喜欢画动物。", "productionPrompt": "用 draw 写你喜欢画什么。", "productionHint": ["draw"], "wordBank": ["I", "like", "to", "draw", "animals", "people"], "stage": 0}, {"id": "food-18", "lemma": "swim", "wordFamily": ["swim", "swimming"], "gloss": "游泳", "phonetic": "/swɪm/", "collocations": ["go swimming", "can swim"], "sentenceFrame": "I can ___ well.", "example": "I can swim well.", "exampleZh": "我游泳游得很好。", "productionPrompt": "用 swim 写一句。", "productionHint": ["swim"], "wordBank": ["I", "can", "swim", "well", "go", "swimming"], "stage": 0}, {"id": "food-19", "lemma": "thirsty", "wordFamily": ["thirsty"], "gloss": "渴的", "phonetic": "/ˈθɜːsti/", "collocations": ["feel thirsty", "very thirsty"], "sentenceFrame": "I am thirsty after ___.", "example": "I am thirsty after running.", "exampleZh": "跑步后我口渴。", "productionPrompt": "用 thirsty 写什么时候渴。", "productionHint": ["thirsty"], "wordBank": ["I", "am", "thirsty", "after", "running", "PE"], "stage": 0}, {"id": "food-20", "lemma": "lunch", "wordFamily": ["lunch"], "gloss": "午餐", "phonetic": "/lʌntʃ/", "collocations": ["have lunch", "school lunch"], "sentenceFrame": "I have lunch at ___.", "example": "I have lunch at school.", "exampleZh": "我在学校吃午饭。", "productionPrompt": "用 have lunch 写一句。", "productionHint": ["lunch"], "wordBank": ["I", "have", "lunch", "at", "school", "home", "twelve"], "stage": 0}, {"id": "food-s1-01", "lemma": "vegetable", "wordFamily": ["vegetable"], "gloss": "蔬菜", "phonetic": "/ˈvedʒtəbl/", "collocations": ["fresh vegetables", "eat vegetables"], "sentenceFrame": "I eat ___ every day.", "example": "I eat vegetables every day.", "exampleZh": "我每天吃蔬菜。", "productionPrompt": "用 vegetables 写一句。", "productionHint": ["vegetable"], "wordBank": ["I", "eat", "vegetables", "every", "day"], "stage": 1}, {"id": "food-s1-02", "lemma": "snack", "wordFamily": ["snack"], "gloss": "零食", "phonetic": "/snæk/", "collocations": ["have a snack", "healthy snack"], "sentenceFrame": "I have a ___ after school.", "example": "I have a snack after school.", "exampleZh": "放学后我吃零食。", "productionPrompt": "用 snack 写一句。", "productionHint": ["snack"], "wordBank": ["I", "have", "a", "snack", "after", "school"], "stage": 1}, {"id": "food-s1-03", "lemma": "recipe", "wordFamily": ["recipe"], "gloss": "食谱", "phonetic": "/ˈresəpi/", "collocations": ["a simple recipe", "follow a recipe"], "sentenceFrame": "This is a simple ___.", "example": "This is a simple recipe.", "exampleZh": "这是一个简单食谱。", "productionPrompt": "用 recipe 写一句。", "productionHint": ["recipe"], "wordBank": ["This", "is", "a", "simple", "recipe"], "stage": 1}, {"id": "food-s1-04", "lemma": "interest", "wordFamily": ["interest", "interested"], "gloss": "兴趣", "phonetic": "/ˈɪntrəst/", "collocations": ["have an interest", "interest in"], "sentenceFrame": "I have an interest in ___.", "example": "I have an interest in art.", "exampleZh": "我对艺术感兴趣。", "productionPrompt": "用 interest 写一句。", "productionHint": ["interest"], "wordBank": ["I", "have", "an", "interest", "in", "art", "music"], "stage": 1, "awl": true, "badge": "进阶词"}, {"id": "food-awl-02", "lemma": "positive", "wordFamily": ["positive"], "gloss": "积极的（进阶）", "phonetic": "/ˈpɒzətɪv/", "collocations": ["positive idea", "feel positive"], "sentenceFrame": "I feel ___ today.", "example": "I feel positive today.", "exampleZh": "我今天感觉很积极。", "productionPrompt": "（进阶词·只认不考造句）", "productionHint": ["positive"], "wordBank": ["I", "feel", "positive", "today"], "stage": 0, "awl": true, "badge": "进阶词"}]}], "awlPolicy": {"separateTrack": false, "maxPerDay": 1, "badge": "进阶词", "grading": "recognition only — excluded from sentence mastery and stage pass gates", "sublists": "not introduced systematically until near stage1 pass"}};</script>
+  <script>
+  (function(){
+    "use strict";
+    var DATA = window.__TOPICS__;
+    var INTERVALS = [1,3,7,14,30,60];
+    var NEW_CAP = 6;
+    var NEW_BATCH = 6;
+    var REVIEW_MIN_PER = 0.75; /* minutes per due card estimate */
+    var REVIEW_STOP_MIN = 12;
+    var STATE_KEY = "ket_mvp_state_v4";
+    var LOG_KEY = "ket_mvp_log_v4";
+    var SWIPE_THRESH = 110;
+
+    var state = { topicId:"school", cards:{}, daily:{}, streak:0, lastActiveDate:null, sentences:[], activeDays:{} };
+    var flow = { step:null, queue:[], i:0, start:0, session:{} };
+
+    function pad(n){ return n<10?"0"+n:""+n; }
+    function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+    function addDays(dateStr, days){
+      var p=dateStr.split("-"); var d=new Date(+p[0],+p[1]-1,+p[2]); d.setDate(d.getDate()+days);
+      return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+    }
+    function daysBetween(a,b){
+      var pa=a.split("-"), pb=b.split("-");
+      var da=new Date(+pa[0],+pa[1]-1,+pa[2]), db=new Date(+pb[0],+pb[1]-1,+pb[2]);
+      return Math.round((db-da)/86400000);
+    }
+    function toast(m){ var t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(function(){t.classList.remove("show");},2000); }
+
+    function allChunks(){
+      var list=[]; DATA.topics.forEach(function(t){ t.chunks.forEach(function(c){ list.push(Object.assign({topicId:t.id,topicName:t.name},c)); }); });
+      return list;
+    }
+    function chunkById(id){ return allChunks().filter(function(c){return c.id===id;})[0]; }
+    function topicChunks(topicId, stageFilter){
+      var t=DATA.topics.filter(function(x){return x.id===topicId;})[0];
+      if(!t) return [];
+      return t.chunks.filter(function(c){
+        var st=c.stage||0;
+        if(stageFilter===0) return st===0;
+        if(stageFilter===1) return st===1;
+        return true;
+      }).map(function(c){ return Object.assign({topicId:t.id,topicName:t.name},c); });
+    }
+
+    function ensureCard(id){
+      if(!state.cards[id]) state.cards[id]={id:id,intervalIdx:-1,due:null,seen:false,reviews:0,remembers:0,lastResult:null,openOk:false,lastReviewDate:null};
+      return state.cards[id];
+    }
+    function ensureDaily(){
+      var t=todayStr();
+      if(!state.daily||state.daily.date!==t) state.daily={date:t,newLearned:0,awlLearned:0,reviewDone:0,practiceDone:false,openDone:false,wrapDone:false,steps:{review:false,learn:false,practice:false,wrap:false}};
+    }
+
+    function load(){
+      try{
+        var s=JSON.parse(localStorage.getItem(STATE_KEY)||"null");
+        if(s){
+          state.topicId=s.topicId||"school";
+          if(!DATA.topics.some(function(t){return t.id===state.topicId;})) state.topicId="school";
+          state.cards=s.cards||{}; state.daily=s.daily||{}; state.streak=s.streak||0;
+          state.lastActiveDate=s.lastActiveDate||null; state.sentences=s.sentences||[];
+          state.activeDays=s.activeDays||{};
+        }
+      }catch(e){}
+      ensureDaily();
+    }
+    function save(){ try{ localStorage.setItem(STATE_KEY, JSON.stringify(state)); }catch(e){} }
+
+    function markActive(){
+      var t=todayStr();
+      state.activeDays[t]=true;
+      if(state.lastActiveDate===t){ save(); return; }
+      if(state.lastActiveDate===addDays(t,-1)) state.streak=(state.streak||0)+1;
+      else state.streak=1;
+      state.lastActiveDate=t; save();
+    }
+
+    function getLogs(){ try{ var L=JSON.parse(localStorage.getItem(LOG_KEY)||"[]"); return Array.isArray(L)?L:[]; }catch(e){return [];} }
+    function addLog(type,itemCount,duration,extra){
+      var entry={type:type,itemCount:itemCount||0,duration:duration||0,timestamp:Date.now(),date:todayStr()};
+      if(extra) Object.keys(extra).forEach(function(k){entry[k]=extra[k];});
+      var list=getLogs(); list.unshift(entry);
+      try{ localStorage.setItem(LOG_KEY, JSON.stringify(list.slice(-120))); }catch(e){}
+      renderLog(); return entry;
+    }
+
+    function dueCards(){
+      var t=todayStr(), list=[];
+      Object.keys(state.cards).forEach(function(id){
+        var c=state.cards[id];
+        if(c.seen && c.due && c.due<=t) list.push(c);
+      });
+      list.sort(function(a,b){ return a.due<b.due?-1:1; });
+      return list;
+    }
+    function estimatedReviewMin(){ return dueCards().length * REVIEW_MIN_PER; }
+    function newBlocked(){ return estimatedReviewMin() > REVIEW_STOP_MIN; }
+
+    function sentencesUsed(){ return (state.sentences||[]).filter(function(s){ var ch=chunkById(s.chunkId); return !(ch&&ch.awl); }).length; }
+    function sentencesForTopic(tid){ return (state.sentences||[]).filter(function(s){
+      if(s.topicId!==tid) return false;
+      var ch=chunkById(s.chunkId); if(ch && ch.awl) return false; /* AWL recognition-only */
+      return true;
+    }).length; }
+    function recordSentence(ch, text){
+      state.sentences = state.sentences || [];
+      state.sentences.push({topicId:ch.topicId, chunkId:ch.id, text:text, ts:Date.now(), date:todayStr()});
+      var card=ensureCard(ch.id); card.openOk=true; save();
+    }
+
+    /* Stage0 recognition: of reviewed cards with last gap ≥2 days, remembers/reviews ≥85% */
+    function stage0Recognition(){
+      var ok=0, tot=0, t=todayStr();
+      Object.keys(state.cards).forEach(function(id){
+        var c=state.cards[id], ch=chunkById(id);
+        if(!ch || (ch.stage||0)!==0 || ch.awl) return;
+        if(!c.reviews) return;
+        if(c.lastReviewDate && daysBetween(c.lastReviewDate, t) >= 2 || c.intervalIdx >= 1){
+          tot += c.reviews; ok += c.remembers;
+        } else if(c.intervalIdx >= 1){ tot += c.reviews; ok += c.remembers; }
+      });
+      /* also count cards whose current interval implies ≥2 day spacing */
+      if(!tot){
+        Object.keys(state.cards).forEach(function(id){
+          var c=state.cards[id], ch=chunkById(id);
+          if(!ch || (ch.stage||0)!==0 || ch.awl || !c.reviews) return;
+          if(c.intervalIdx >= 1){ tot += c.reviews; ok += c.remembers; }
+        });
+      }
+      if(!tot) return null;
+      return Math.round((ok/tot)*100);
+    }
+    function continuousDays(){
+      var n=0, cur=new Date();
+      for(var i=0;i<60;i++){
+        var k=cur.getFullYear()+"-"+pad(cur.getMonth()+1)+"-"+pad(cur.getDate());
+        if(state.activeDays && state.activeDays[k]){ n++; cur.setDate(cur.getDate()-1); }
+        else break;
+      }
+      return n;
+    }
+    function topicLit(tid){ return sentencesForTopic(tid) >= 5; }
+    function litCount(){ return DATA.topics.filter(function(t){return topicLit(t.id);}).length; }
+    function stage0Passed(){
+      var rec=stage0Recognition();
+      var sentsOk = DATA.topics.every(function(t){ return sentencesForTopic(t.id) >= 5; });
+      var daysOk = continuousDays() >= 5;
+      return {rec:rec, sentsOk:sentsOk, daysOk:daysOk, pass: rec!==null && rec>=85 && sentsOk && daysOk};
+    }
+
+    function availableNew(){
+      if(newBlocked()) return [];
+      ensureDaily();
+      var left = NEW_CAP - (state.daily.newLearned||0);
+      if(left<=0) return [];
+      var chunks = topicChunks(state.topicId, 0);
+      var unseen = chunks.filter(function(ch){ var c=state.cards[ch.id]; return !c||!c.seen; });
+      var normal = unseen.filter(function(ch){ return !ch.awl; });
+      var awls = unseen.filter(function(ch){ return !!ch.awl; });
+      var out = normal.slice();
+      var allowAwl = (state.daily.awlLearned||0) < 1;
+      var pick = [];
+      var i=0;
+      while(pick.length < Math.min(left, NEW_BATCH) && i < out.length){ pick.push(out[i++]); }
+      if(allowAwl && awls.length && pick.length < Math.min(left, NEW_BATCH)){
+        /* at most one AWL, append if room or swap last normal if batch full and we want exposure — append only if room */
+        if(pick.length < Math.min(left, NEW_BATCH)) pick.push(awls[0]);
+      } else if(allowAwl && awls.length && pick.length === 0){
+        pick.push(awls[0]);
+      }
+      return pick;
+    }
+
+    function renderTopics(){
+      var row=document.getElementById("topic-row"); row.innerHTML="";
+      DATA.topics.forEach(function(t){
+        var s0=t.chunks.filter(function(c){return (c.stage||0)===0;}).length;
+        var b=document.createElement("button"); b.type="button";
+        b.className="topic-btn"+(t.id===state.topicId?" active":"");
+        b.innerHTML='<div class="t">'+t.name+'</div><div class="e">'+s0+' 个词块 · 阶段0</div>';
+        b.onclick=function(){ state.topicId=t.id; save(); renderTopics(); refreshHome(); toast("主题："+t.name); };
+        row.appendChild(b);
+      });
+    }
+    function renderLights(){
+      var el=document.getElementById("topic-lights"); el.innerHTML="";
+      DATA.topics.forEach(function(t){
+        var n=sentencesForTopic(t.id), on=n>=5;
+        var d=document.createElement("div"); d.className="light"+(on?" on":"");
+        d.innerHTML='<div class="emoji">'+(on?"💡":"🌑")+'</div><div class="tn">'+t.name+'</div><div class="td">'+n+'/5 句'+(on?" · 已点亮":"")+'</div>';
+        el.appendChild(d);
+      });
+    }
+    function refreshHome(){
+      ensureDaily();
+      var s0=stage0Passed();
+      document.getElementById("h-sentences").textContent = sentencesUsed();
+      document.getElementById("h-topics").textContent = litCount()+"/3";
+      document.getElementById("h-streak").textContent = state.streak||0;
+      document.getElementById("p-sentences").textContent = sentencesUsed();
+      document.getElementById("p-lit").textContent = litCount()+"/3";
+      document.getElementById("p-due").textContent = dueCards().length;
+      document.getElementById("p-new").textContent = state.daily.newLearned||0;
+
+      var est=estimatedReviewMin();
+      document.getElementById("overdue-banner").classList.toggle("show", newBlocked());
+      document.getElementById("overdue-banner").textContent = "⏰ 预计复习约 "+est.toFixed(0)+" 分钟（>"+REVIEW_STOP_MIN+"），请先复习，今日暂停新学。";
+
+      var recTxt = s0.rec===null ? "暂无（需间隔≥2天的复习）" : (s0.rec+"%");
+      document.getElementById("s0-pass").innerHTML =
+        "过关标准：辨认 <strong>"+recTxt+"</strong>（需≥85%，间隔≥2天）· 每主题造句 <strong>"+
+        DATA.topics.map(function(t){return sentencesForTopic(t.id);}).join("/")+"</strong>/5 · 连续学习 <strong>"+continuousDays()+"</strong>/5 天"+
+        (s0.pass?" · ✅ 已达成！":"")+"<br>进阶词（AWL）：自然出现时最多每天 1 个，只认不考，不计入造句/过关。";
+      if(s0.pass){
+        document.getElementById("road-s0").classList.add("pass");
+        document.getElementById("s0-badge").textContent="已过关";
+        document.getElementById("road-s1").classList.remove("lock");
+        document.getElementById("road-s1").classList.add("cur");
+        document.getElementById("s1-dot").textContent="1";
+        document.getElementById("s1-badge").style.display="inline";
+      }
+
+      var steps=state.daily.steps||{};
+      document.querySelectorAll("#task-list li").forEach(function(li){
+        var s=li.getAttribute("data-step");
+        li.classList.toggle("done", !!steps[s]);
+        li.querySelector(".box").textContent = steps[s] ? "✓" : ({review:"1",learn:"2",practice:"3",wrap:"4"})[s];
+      });
+      var doneN=["review","learn","practice","wrap"].filter(function(k){return steps[k];}).length;
+      document.getElementById("task-hint").textContent = doneN+"/4 · 硬顶 20 分钟";
+      renderLights(); renderLog();
+    }
+
+    function renderLog(){
+      var list=getLogs(), ul=document.getElementById("log-list"), empty=document.getElementById("log-empty");
+      ul.innerHTML="";
+      if(!list.length){ empty.style.display="block"; return; }
+      empty.style.display="none";
+      var labels={review:"复习",learn:"新学",practice:"造句",open_produce:"造句",wrap:"收工",remember:"记住了",forgot:"没记住",swipe_yes:"右滑",swipe_no:"左滑"};
+      list.slice(0,25).forEach(function(item){
+        var d=new Date(item.timestamp), tm=pad(d.getHours())+":"+pad(d.getMinutes());
+        var li=document.createElement("li");
+        li.innerHTML='<span class="badge">'+(labels[item.type]||item.type)+'</span><div><div>'+(item.note||(item.itemCount+" 项"))+'</div><div class="meta">'+(item.date||"")+" "+tm+" · "+item.duration+" 秒</div></div>";
+        ul.appendChild(li);
+      });
+    }
+
+    function openFlow(step){
+      flow.step=step; flow.start=Date.now(); flow.i=0; flow.session={remembered:0,forgot:0,learned:0,openOk:0};
+      document.getElementById("home").style.display="none";
+      var fl=document.getElementById("flow"); fl.classList.add("show"); fl.setAttribute("aria-hidden","false");
+      if(step==="review") startReview();
+      else if(step==="learn") startLearn();
+      else if(step==="practice") startPractice();
+      else if(step==="wrap") startWrap();
+    }
+    function closeFlow(){ document.getElementById("flow").classList.remove("show"); document.getElementById("home").style.display="block"; refreshHome(); }
+    document.getElementById("flow-back").onclick=closeFlow;
+    function setFlowTitle(title,prog){ document.getElementById("flow-title").textContent=title; document.getElementById("flow-prog").textContent=prog||""; }
+
+    /* ===== Swipe engine ===== */
+    function bindSwipe(cardEl, onLeft, onRight){
+      var startX=0, startY=0, dx=0, dy=0, dragging=false, locked=false;
+      var stampNo=cardEl.querySelector(".stamp.no");
+      var stampYes=cardEl.querySelector(".stamp.yes");
+      function setTransform(x,y,rot){ cardEl.style.transform="translate("+x+"px,"+y+"px) rotate("+rot+"deg)"; }
+      function opacityFor(x){ return Math.min(1, Math.abs(x)/SWIPE_THRESH); }
+      function onStart(x,y){ if(locked) return; dragging=true; startX=x; startY=y; dx=0; dy=0; cardEl.classList.add("dragging"); cardEl.classList.remove("snap","fly"); }
+      function onMove(x,y){
+        if(!dragging||locked) return;
+        dx=x-startX; dy=y-startY;
+        var rot=dx*0.08;
+        setTransform(dx, dy*0.3, rot);
+        if(stampNo) stampNo.style.opacity = dx<0 ? opacityFor(dx) : 0;
+        if(stampYes) stampYes.style.opacity = dx>0 ? opacityFor(dx) : 0;
+      }
+      function finish(dir){
+        locked=true; dragging=false;
+        cardEl.classList.remove("dragging"); cardEl.classList.add("fly");
+        var flyX = dir==="right" ? window.innerWidth : -window.innerWidth;
+        setTransform(flyX, dy*0.3, dir==="right"?18:-18);
+        if(stampNo) stampNo.style.opacity = dir==="left"?1:0;
+        if(stampYes) stampYes.style.opacity = dir==="right"?1:0;
+        setTimeout(function(){ if(dir==="left") onLeft(); else onRight(); }, 260);
+      }
+      function onEnd(){
+        if(!dragging||locked) return;
+        dragging=false; cardEl.classList.remove("dragging");
+        if(dx <= -SWIPE_THRESH) finish("left");
+        else if(dx >= SWIPE_THRESH) finish("right");
+        else {
+          cardEl.classList.add("snap"); setTransform(0,0,0);
+          if(stampNo) stampNo.style.opacity=0; if(stampYes) stampYes.style.opacity=0;
+        }
+      }
+      cardEl.addEventListener("touchstart", function(e){ var t=e.changedTouches[0]; onStart(t.clientX,t.clientY); }, {passive:true});
+      cardEl.addEventListener("touchmove", function(e){ var t=e.changedTouches[0]; onMove(t.clientX,t.clientY); }, {passive:true});
+      cardEl.addEventListener("touchend", onEnd);
+      cardEl.addEventListener("mousedown", function(e){ e.preventDefault(); onStart(e.clientX,e.clientY);
+        function mm(ev){ onMove(ev.clientX,ev.clientY); }
+        function mu(){ onEnd(); window.removeEventListener("mousemove",mm); window.removeEventListener("mouseup",mu); }
+        window.addEventListener("mousemove",mm); window.addEventListener("mouseup",mu);
+      });
+      return { forceLeft:function(){ if(!locked) finish("left"); }, forceRight:function(){ if(!locked) finish("right"); } };
+    }
+
+    function cardFaceHTML(ch, mode){
+      var detail = mode==="learn" || mode==="revealed";
+      var html = '<div class="stamp no">没记住</div><div class="stamp yes">记住了</div>';
+      html += '<div class="label">'+(ch.topicName||"")+(mode==="learn"?" · 新词块":" · 复习")+'</div>';
+      html += '<div class="lemma">'+ch.lemma+'<span class="phon">'+(ch.phonetic||"")+'</span>'+(ch.awl?'<span class="awl-badge">进阶词</span>':'')+'</div>';
+      html += '<div class="gloss">'+ch.gloss+'</div>';
+      if(detail){
+        html += '<div class="family">发音提示：'+(ch.phonetic||"—")+' · 大声读 3 遍 🗣️</div>';
+        if(ch.sentenceFrame) html += '<div class="label">句框</div><div class="frame">'+ch.sentenceFrame+'</div>';
+        html += '<div class="label">常用搭配</div>'+ch.collocations.map(function(x){return '<span class="tag">'+x+'</span>';}).join("");
+        html += '<div class="label" style="margin-top:8px">例句</div><div class="ex">"'+ch.example+'"</div><div class="ex-zh">'+ch.exampleZh+'</div>';
+        if(ch.wordFamily && ch.wordFamily.length) html += '<div class="family" style="margin-top:8px">词族：'+ch.wordFamily.join(" / ")+'</div>';
+      } else {
+        html += '<div class="hint-box" style="margin-top:24px">先想意思～点「看提示」或直接左右滑</div>';
+      }
+      return html;
+    }
+
+    /* Review */
+    function startReview(){
+      flow.queue = dueCards();
+      if(!flow.queue.length){
+        ensureDaily(); state.daily.steps.review=true; save();
+        setFlowTitle("复习到期卡","0 张");
+        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">✨</div><h4>今天没有到期卡</h4><p style="color:var(--muted);font-size:13px">可以去做新学或造句。</p></div><button type="button" class="btn btn-primary btn-full" id="rv-skip">回首页</button></div>';
+        document.getElementById("rv-skip").onclick=function(){ addLog("review",0,Math.round((Date.now()-flow.start)/1000),{note:"无到期卡"}); closeFlow(); };
+        return;
+      }
+      flow.i=0; flow.revealed=false; renderReviewSwipe();
+    }
+    function renderReviewSwipe(){
+      var card=flow.queue[flow.i], ch=chunkById(card.id);
+      setFlowTitle("复习到期卡",(flow.i+1)+" / "+flow.queue.length);
+      var body=document.getElementById("flow-body");
+      body.innerHTML=
+        '<div class="swipe-hint">👈 <b class="left">左滑 = 没记住</b>　<b class="right">右滑 = 记住了</b> 👉</div>'+
+        '<div class="deck"><div class="deck-card" id="swipe-card">'+cardFaceHTML(ch, flow.revealed?"revealed":"review")+'</div></div>'+
+        '<div class="swipe-btns">'+
+        '<button type="button" class="no-btn" id="btn-no" title="没记住">←</button>'+
+        '<button type="button" class="peek-btn" id="btn-peek">'+(flow.revealed?"已显示":"看提示")+'</button>'+
+        '<button type="button" class="yes-btn" id="btn-yes" title="记住了">→</button></div>';
+      var ctl=bindSwipe(document.getElementById("swipe-card"), function(){ answerReview(false); }, function(){ answerReview(true); });
+      document.getElementById("btn-no").onclick=function(){ ctl.forceLeft(); };
+      document.getElementById("btn-yes").onclick=function(){ ctl.forceRight(); };
+      document.getElementById("btn-peek").onclick=function(){ flow.revealed=true; renderReviewSwipe(); };
+    }
+    function answerReview(remember){
+      var card=flow.queue[flow.i], t=todayStr();
+      card.reviews=(card.reviews||0)+1; card.lastReviewDate=t; card.lastResult=remember?"remember":"forgot";
+      if(remember){
+        card.remembers=(card.remembers||0)+1;
+        card.intervalIdx=Math.min((card.intervalIdx<0?0:card.intervalIdx+1), INTERVALS.length-1);
+        card.due=addDays(t, INTERVALS[card.intervalIdx]);
+        flow.session.remembered++; addLog("remember",1,15,{note:chunkById(card.id).lemma});
+      } else {
+        card.intervalIdx=0; card.due=addDays(t,1);
+        flow.session.forgot++; addLog("forgot",1,15,{note:chunkById(card.id).lemma});
+      }
+      ensureDaily(); state.daily.reviewDone=(state.daily.reviewDone||0)+1; save();
+      flow.i++; flow.revealed=false;
+      if(flow.i>=flow.queue.length){
+        ensureDaily(); state.daily.steps.review=true; markActive(); save();
+        var dur=Math.round((Date.now()-flow.start)/1000);
+        addLog("review",flow.queue.length,dur,{note:"记住了 "+flow.session.remembered+" / 没记住 "+flow.session.forgot});
+        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">👏</div><h4>复习完成</h4></div><div class="summary-row"><span>记住了</span><strong>'+flow.session.remembered+'</strong></div><div class="summary-row"><span>没记住</span><strong>'+flow.session.forgot+'</strong></div><button type="button" class="btn btn-primary btn-full" id="rv-done" style="margin-top:14px">回首页</button></div>';
+        document.getElementById("rv-done").onclick=closeFlow; return;
+      }
+      renderReviewSwipe();
+    }
+
+    /* Learn */
+    function startLearn(){
+      if(newBlocked()){
+        setFlowTitle("新学词块","");
+        document.getElementById("flow-body").innerHTML='<div class="card-block"><p style="font-size:14px;margin-bottom:12px">预计复习超过 '+REVIEW_STOP_MIN+' 分钟，已暂停新学。请先复习。</p><button type="button" class="btn btn-primary btn-full" id="ln-block">去复习</button></div>';
+        document.getElementById("ln-block").onclick=function(){ openFlow("review"); }; return;
+      }
+      flow.queue=availableNew();
+      if(!flow.queue.length){
+        ensureDaily(); state.daily.steps.learn=true; save();
+        setFlowTitle("新学词块","");
+        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">📚</div><h4>今日新学已满或本主题学完啦</h4><p style="color:var(--muted);font-size:13px">每日硬顶 '+NEW_CAP+' 个新词块。</p></div><button type="button" class="btn btn-primary btn-full" id="ln-none">回首页</button></div>';
+        document.getElementById("ln-none").onclick=closeFlow; return;
+      }
+      flow.i=0; renderLearnSwipe();
+    }
+    function renderLearnSwipe(){
+      var ch=flow.queue[flow.i];
+      setFlowTitle("新学词块",(flow.i+1)+" / "+flow.queue.length);
+      document.getElementById("flow-body").innerHTML=
+        '<div class="swipe-hint">看一看，然后 <b class="right">右滑 = 学会了</b>（左滑再看）'+(ch.awl?' · <b style="color:#c2410c">进阶词只认读，不计入造句过关</b>':'')+'</div>'+
+        '<div class="deck"><div class="deck-card" id="swipe-card">'+cardFaceHTML(ch,"learn")+'</div></div>'+
+        '<div class="swipe-btns">'+
+        '<button type="button" class="no-btn" id="btn-no" title="再看">←</button>'+
+        '<button type="button" class="yes-btn" id="btn-yes" title="学会了">→</button></div>';
+      var ctl=bindSwipe(document.getElementById("swipe-card"),
+        function(){ /* left = look again: re-render same card */ toast("再看一眼～"); renderLearnSwipe(); },
+        function(){ learnAccept(ch); });
+      document.getElementById("btn-no").onclick=function(){ ctl.forceLeft(); };
+      document.getElementById("btn-yes").onclick=function(){ ctl.forceRight(); };
+    }
+    function learnAccept(ch){
+      var card=ensureCard(ch.id); card.seen=true; card.intervalIdx=0; card.due=addDays(todayStr(), INTERVALS[0]);
+      ensureDaily(); state.daily.newLearned=(state.daily.newLearned||0)+1;
+      if(ch.awl) state.daily.awlLearned=(state.daily.awlLearned||0)+1;
+      flow.session.learned++; save();
+      addLog("learn",1,30,{note:ch.lemma+(ch.awl?" · 进阶词":"")});
+      flow.i++;
+      if(flow.i>=flow.queue.length){
+        ensureDaily(); state.daily.steps.learn=true; markActive(); save();
+        var dur=Math.round((Date.now()-flow.start)/1000);
+        addLog("learn",flow.session.learned,dur,{note:"本批新学 "+flow.session.learned+" 个"});
+        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">🎉</div><h4>新学完成</h4></div><div class="summary-row"><span>本批</span><strong>'+flow.session.learned+'</strong></div><div class="summary-row"><span>今日累计</span><strong>'+state.daily.newLearned+' / '+NEW_CAP+'</strong></div><button type="button" class="btn btn-primary btn-full" style="margin-top:14px" id="ln-done">回首页</button></div>';
+        document.getElementById("ln-done").onclick=closeFlow; return;
+      }
+      renderLearnSwipe();
+    }
+
+    /* Practice: word-bank sentence */
+    function startPractice(){
+      var pool=topicChunks(state.topicId,0).filter(function(ch){ var c=state.cards[ch.id]; return c&&c.seen&&!ch.awl; });
+      if(pool.length<1) pool=topicChunks(state.topicId,0).filter(function(ch){return !ch.awl;}).slice(0,3);
+      flow.queue=shuffle(pool).slice(0,1);
+      renderOpenProduce(flow.queue[0]);
+    }
+    function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t;} return a; }
+    function renderOpenProduce(ch){
+      setFlowTitle("词库造句","4–5 分钟");
+      var hints=(ch.productionHint||[ch.lemma]).join(", ");
+      document.getElementById("flow-body").innerHTML=
+        '<div class="card-block">'+
+        '<div class="label">用句框写一句关于你自己的话</div>'+
+        (ch.sentenceFrame?'<div class="frame">'+ch.sentenceFrame+'</div>':'')+
+        '<p style="font-size:14px;font-weight:600;margin:8px 0">'+ch.productionPrompt+'</p>'+
+        '<div class="hint-box">可以模仿：<strong>'+ch.example+'</strong><br>发音：'+ch.lemma+' '+(ch.phonetic||"")+'</div>'+
+        '<textarea id="open-text" style="margin-top:10px" placeholder="写一句短短的英文（至少 3 个词）"></textarea>'+
+        '<div class="label" style="margin-top:8px">词库（点一下加入）</div>'+
+        '<div class="bank" id="wbank">'+(ch.wordBank||[]).map(function(w){return '<button type="button">'+w+'</button>';}).join("")+'</div>'+
+        '<div class="hint-box">记得用上：'+hints+'</div>'+
+        '<div class="feedback" id="open-fb"></div>'+
+        '<div class="btn-row"><button type="button" class="btn btn-ghost" id="open-hint">看例句</button><button type="button" class="btn btn-primary" id="open-check">自检</button></div>'+
+        '<button type="button" class="btn btn-green btn-full" id="open-done" style="display:none;margin-top:10px">完成造句</button></div>';
+      Array.prototype.forEach.call(document.querySelectorAll("#wbank button"), function(b){
+        b.onclick=function(){ var ta=document.getElementById("open-text"); ta.value=(ta.value?ta.value.replace(/\s+$/,"")+" ":"")+b.textContent; };
+      });
+      document.getElementById("open-hint").onclick=function(){ document.getElementById("open-fb").className="feedback info"; document.getElementById("open-fb").textContent="参考："+ch.example; };
+      document.getElementById("open-check").onclick=function(){
+        var text=(document.getElementById("open-text").value||"").trim();
+        var fb=document.getElementById("open-fb");
+        if(text.split(/\s+/).length<3){ fb.className="feedback bad"; fb.textContent="至少写 3 个词哦，点词库试试～"; return; }
+        var low=text.toLowerCase();
+        var hits=(ch.productionHint||[ch.lemma]).filter(function(h){return low.indexOf(String(h).toLowerCase())!==-1;});
+        if(hits.length){
+          fb.className="feedback ok"; fb.textContent="✓ 你会用这句啦！🌟";
+          recordSentence(ch, text); flow.session.openOk++;
+          ensureDaily(); state.daily.openDone=true; state.daily.practiceDone=true; state.daily.steps.practice=true;
+          markActive(); save(); addLog("open_produce",1,60,{note:ch.lemma+" 造句"});
+          document.getElementById("open-done").style.display="block";
+        } else { fb.className="feedback bad"; fb.textContent="好像还没用到（"+hints+"），改一下再自检～"; }
+      };
+      document.getElementById("open-done").onclick=function(){
+        addLog("practice",1,Math.round((Date.now()-flow.start)/1000),{note:"词库造句"}); closeFlow();
+      };
+    }
+
+    function startWrap(){
+      setFlowTitle("收工总结", todayStr());
+      ensureDaily(); markActive(); state.daily.steps.wrap=true; state.daily.wrapDone=true; save();
+      addLog("wrap",1,Math.max(5,Math.round((Date.now()-flow.start)/1000)),{note:"会用句子 "+sentencesUsed()+" · 点亮 "+litCount()+"/3"});
+      var steps=state.daily.steps;
+      document.getElementById("flow-body").innerHTML=
+        '<div class="card-block"><div class="big-ok"><div class="emoji">🏁</div><h4>今日收工</h4><p style="color:var(--muted);font-size:13px">今天又多会了几句！离 KET 更近啦 💪</p></div>'+
+        '<div class="summary-row"><span>会用的句子</span><strong>'+sentencesUsed()+'</strong></div>'+
+        '<div class="summary-row"><span>主题点亮</span><strong>'+litCount()+'/3</strong></div>'+
+        '<div class="summary-row"><span>连续天数</span><strong>'+state.streak+'</strong></div>'+
+        '<div class="summary-row"><span>复习</span><strong>'+(steps.review?"已完成":"未做")+'</strong></div>'+
+        '<div class="summary-row"><span>新学</span><strong>'+(state.daily.newLearned||0)+' 个</strong></div>'+
+        '<div class="summary-row"><span>造句</span><strong>'+(steps.practice?"已完成":"未做")+'</strong></div>'+
+        '<button type="button" class="btn btn-primary btn-full" style="margin-top:14px" id="wp-done">回首页</button></div>';
+      document.getElementById("wp-done").onclick=closeFlow;
+    }
+
+    document.querySelectorAll("#task-list li").forEach(function(li){
+      function go(e){ e.preventDefault(); openFlow(li.getAttribute("data-step")); }
+      li.addEventListener("click",go);
+      li.querySelector(".step-go").addEventListener("click",function(e){ e.stopPropagation(); go(e); });
+    });
+    document.getElementById("btn-clear-log").onclick=function(){ try{localStorage.setItem(LOG_KEY,"[]");}catch(e){} renderLog(); toast("记录已清空"); };
+
+    load(); renderTopics(); refreshHome();
+  })();
+  </script>
+</body>
+</html>
