@@ -1,8 +1,8 @@
 shot-*.png
 .DS_Store
-# Local Firebase Web config (copy from firebase-config.example.js). Never commit real project secrets / service accounts.
+# Never commit cloud secrets / service accounts
 serviceAccount*.json
-*-firebase-adminsdk*.json
 .env
 .env.*
 _cloudbase_hosting/
+js/vendor/

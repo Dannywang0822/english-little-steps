@@ -28,7 +28,7 @@ tcb hosting detail -e english-little-steps-d0a2b84764b
 # 4) 在仓库根目录部署（纯静态，无 build）
 cd /path/to/english-little-steps
 tcb hosting deploy . -e english-little-steps-d0a2b84764b \
-  --ignore "shot-*.png,.git/**,docs/**,firebase-config.js,firestore.rules,firestore.indexes.json,firebase.json,.firebaserc,.github/**"
+  --ignore "shot-*.png,.git/**,docs/**,.github/**"
 
 # 5) 打开控制台给出的默认域名，确认：
 #    - 页面 HTTP 200

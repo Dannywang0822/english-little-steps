@@ -9,7 +9,7 @@
  * Public API: bootstrap, sendRegisterCode, register(email,password,code),
  * login, logout, currentUser, syncAfterLogin, schedulePush, flush, merge helpers, mode, hooks.
  * Register = getVerification → verify → signUp (email OTP). Login = email+password.
- * Collection: user_bundles only (doc id = auth.uid). No Firebase dual-write.
+ * Collection: user_bundles only (doc id = auth.uid). CloudBase only.
  */
 (function (global) {
   "use strict";

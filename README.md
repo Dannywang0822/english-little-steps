@@ -77,7 +77,7 @@ python3 -m http.server 8765
 
 未配置时应用自动走 **纯 localStorage**。配置 `cloudbase-config.js` 后可用邮箱注册/登录，进度同步到 CloudBase 文档库。
 
-> 已从 Firebase 迁出（不双写）。Firebase 相关文件仅作历史参考。
+> 仅使用腾讯云 CloudBase（Auth + 文档库）。仓库内已无 Firebase 配置/规则/依赖。
 
 ### 一次性配置（Danny / HR）
 
