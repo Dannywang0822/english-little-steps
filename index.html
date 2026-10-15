@@ -685,7 +685,8 @@
     function stage0Passed(){
       var rec=stage0Recognition();
       var sentsOk = DATA.topics.every(function(t){ return sentencesForTopic(t.id) >= 5; });
-      var daysOk = continuousDays() >= 5;
+      /* Pedagogy 2026-10-15: habit gate = checkins streak (4 tasks done), not activeDays */
+      var daysOk = checkinStreak() >= 5;
       return {rec:rec, sentsOk:sentsOk, daysOk:daysOk, pass: rec!==null && rec>=85 && sentsOk && daysOk};
     }
 
@@ -920,7 +921,7 @@
       var pctC=clampPct(checked/STAGE0_CHECKIN_TARGET*100);
       var streak=checkinStreak();
       document.getElementById("rp-check-fill").style.width=pctC+"%";
-      document.getElementById("rp-check-meta").textContent="已打卡 "+checked+" 天 · 目标打卡 "+STAGE0_CHECKIN_TARGET+" · 连续 "+streak+" 天（非过关条件）";
+      document.getElementById("rp-check-meta").textContent="已打卡 "+checked+" 天 · 目标打卡 "+STAGE0_CHECKIN_TARGET+"（仅展示）· 连续 "+streak+" 天（过关需≥5）";
       document.getElementById("rp-check-label").textContent= checked>=STAGE0_CHECKIN_TARGET ? "目标打卡 60 已达到" : "目标打卡 60";
     }
 
@@ -934,7 +935,7 @@
       var recTxt = s0.rec===null ? "暂无（需间隔≥2天的复习）" : (s0.rec+"%");
       document.getElementById("s0-pass").innerHTML =
         "过关标准：辨认 <strong>"+recTxt+"</strong>（需≥85%，间隔≥2天）· 每主题造句 <strong>"+
-        DATA.topics.map(function(t){return sentencesForTopic(t.id);}).join("/")+"</strong>/5 · 连续学习 <strong>"+continuousDays()+"</strong>/5 天"+
+        DATA.topics.map(function(t){return sentencesForTopic(t.id);}).join("/")+"</strong>/5 · 连续打卡 <strong>"+checkinStreak()+"</strong>/5 天"+
         (s0.pass?" · ✅ 已达成！":"")+"<br>进阶词（AWL）：自然出现时最多每天 1 个，只认不考，不计入造句/过关。";
       if(s0.pass){
         document.getElementById("road-s0").classList.add("pass");
