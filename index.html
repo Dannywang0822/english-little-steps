@@ -1386,8 +1386,8 @@
       else { b.textContent="本地模式（未配置 Firebase）"; b.classList.add("off"); }
       var hint=document.getElementById("cloud-login-hint");
       if(hint) hint.textContent = on
-        ? "用邮箱登录后，打卡与词卡进度会同步到云端（可多设备）。"
-        : "尚未配置云端：复制 firebase-config.example.js → firebase-config.js 并填入项目信息后刷新。也可先用「游客继续」。";
+        ? "用邮箱登录后进度可同步。云端正在迁移到国内服务，若连不上不影响学习，可用「游客继续」。"
+        : "云端暂未就绪，请先点「游客继续」——进度保存在本机，云端恢复后可再注册并导入。";
     }
 
     function bootAuth(){
