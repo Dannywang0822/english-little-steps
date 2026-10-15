@@ -211,7 +211,7 @@
         <div class="ck-head"><h2>📅 今日打卡</h2><span class="ck-badge" id="ck-badge">0/4 未打卡</span></div>
         <div class="ck-topic">今天学：<span id="ck-topic-name">学校生活</span>（可切换）</div>
         <div class="topic-row" id="topic-row"></div>
-        <div class="ck-topic-note">新学名额全部主题共用（每天共 12 个，降档日 8 个），造句按主题计数；复习包含全部主题的到期卡。任意一个主题 4 项全完成就算今天打卡。</div>
+        <div class="ck-topic-note">每个主题各自新学 12 个（该主题前一天左滑过半则降为 8）；进阶词全站每天最多 1 个。造句按主题计数；复习包含全部主题的到期卡。任意一个主题 4 项全完成就算今天打卡。</div>
         <div id="task-list">
           <div class="ck-row" data-step="review"><div><div class="rt">1 复习到期卡 <span style="font-weight:400;font-size:11px;color:var(--muted)">（全部主题）</span></div><div class="rs">未开始</div></div><div class="rp"></div></div>
           <div class="ck-row" data-step="learn"><div><div class="rt">2 新学词块 <span style="font-weight:400;font-size:11px;color:var(--muted)">（本主题）</span></div><div class="rs">未开始</div></div><div class="rp"></div></div>
@@ -275,7 +275,7 @@
     var DATA = window.__TOPICS__;
     var INTERVALS = [1,3,7,14,30,60];
     var NEW_CAP = 12;               /* normal daily new-card cap */
-    var NEW_CAP_SHARED = true;      /* true: one daily new-learn cap shared by all topics; false: per-topic cap */
+    var NEW_CAP_SHARED = false;     /* true: shared daily cap; false: 12 per topic (Danny chose) */
     var NEW_CAP_REDUCED = 8;        /* next-day cap when too many new cards were left-swiped */
     var NEW_FAIL_RATIO = 0.5;       /* >50% of the day's new cards left-swiped -> reduce tomorrow */
     var NEW_BATCH = 12;
@@ -400,39 +400,55 @@
       if(!state.cards[id]) state.cards[id]={id:id,intervalIdx:-1,due:null,seen:false,reviews:0,remembers:0,lastResult:null,openOk:false,lastReviewDate:null,errors:0,stubborn:false,stubIdx:0,consecRight:0,mastered:false,priority:false,relearn:null};
       return state.cards[id];
     }
+    function topicCapFromPrev(prev, tid){
+      /* next-day drop to 8: shared = global ratio; per-topic = that topic's own left ratio */
+      if(NEW_CAP_SHARED){
+        var seenN=Object.keys(prev.newSeen||{}).length, leftN=Object.keys(prev.newLeftAny||{}).length;
+        return (seenN>0 && (leftN/seenN) > NEW_FAIL_RATIO) ? NEW_CAP_REDUCED : NEW_CAP;
+      }
+      var px=(prev.topics&&prev.topics[tid])||{};
+      var seenN=Object.keys(px.newSeen||{}).length, leftN=Object.keys(px.newLeftAny||{}).length;
+      return (seenN>0 && (leftN/seenN) > NEW_FAIL_RATIO) ? NEW_CAP_REDUCED : NEW_CAP;
+    }
     function ensureDaily(){
       var t=todayStr();
       if(!state.daily||state.daily.date!==t){
         var prev=state.daily||{};
-        var seenN=Object.keys(prev.newSeen||{}).length, leftN=Object.keys(prev.newLeftAny||{}).length;
-        var reduced = seenN>0 && (leftN/seenN) > NEW_FAIL_RATIO;
         state.daily={date:t,newLearned:0,awlLearned:0,reviewDone:0,practiceDone:false,openDone:false,wrapDone:false,
           steps:{review:false,learn:false,practice:false,wrap:false},
-          newCap: reduced?NEW_CAP_REDUCED:NEW_CAP, usedMs:0,
+          newCap: topicCapFromPrev(prev, null), usedMs:0, _prevCaps:{},
           reappear:{}, reviewed:{}, found:{}, newSeen:{}, newLeftAny:{}, newCounted:{}, stubbornDone:{}};
+        DATA.topics.forEach(function(tp){ state.daily._prevCaps[tp.id]=topicCapFromPrev(prev, tp.id); });
       }
       var d=state.daily;
       ["reappear","reviewed","found","newSeen","newLeftAny","newCounted","stubbornDone"].forEach(function(k){ if(!d[k]) d[k]={}; });
       if(!d.newCap) d.newCap=NEW_CAP;
       if(!d.usedMs) d.usedMs=0;
+      if(!d._prevCaps) d._prevCaps={};
       if(!d.topics){
-        /* migrate pre-per-topic data: attribute today's progress to the active topic */
         d.topics={};
         var st=d.steps||{};
         if(d.newLearned||d.sentToday||st.learn||st.practice||st.wrap){
-          d.topics[state.topicId||"school"]={newLearned:d.newLearned||0, awlLearned:d.awlLearned||0, sentToday:d.sentToday||0,
-            learnExhausted:false, practiceExhausted:false, wrap:!!st.wrap};
+          var mid=state.topicId||"school";
+          d.topics[mid]={newLearned:d.newLearned||0, awlLearned:d.awlLearned||0, sentToday:d.sentToday||0,
+            learnExhausted:false, practiceExhausted:false, wrap:!!st.wrap,
+            newCap: d._prevCaps[mid]||d.newCap||NEW_CAP, newSeen:{}, newLeftAny:{}};
         }
       }
     }
     /* per-topic daily progress (new-learn, sentences, wrap) */
     function td(tid){
       ensureDaily(); tid=tid||state.topicId; var T=state.daily.topics;
-      if(!T[tid]) T[tid]={newLearned:0,awlLearned:0,sentToday:0,learnExhausted:false,practiceExhausted:false,wrap:false};
+      if(!T[tid]) T[tid]={newLearned:0,awlLearned:0,sentToday:0,learnExhausted:false,practiceExhausted:false,wrap:false,
+        newCap: NEW_CAP_SHARED ? state.daily.newCap : (state.daily._prevCaps[tid]||NEW_CAP), newSeen:{}, newLeftAny:{}};
+      if(!T[tid].newSeen) T[tid].newSeen={};
+      if(!T[tid].newLeftAny) T[tid].newLeftAny={};
+      if(!T[tid].newCap) T[tid].newCap = NEW_CAP_SHARED ? state.daily.newCap : (state.daily._prevCaps[tid]||NEW_CAP);
       return T[tid];
     }
+    function topicNewCap(tid){ return NEW_CAP_SHARED ? state.daily.newCap : td(tid).newCap; }
     function newLearnedTotal(){ ensureDaily(); var n=0, T=state.daily.topics; Object.keys(T).forEach(function(k){ n+=T[k].newLearned||0; }); return n; }
-    function newRemaining(tid){ var used = NEW_CAP_SHARED ? newLearnedTotal() : (td(tid).newLearned||0); return Math.max(0, state.daily.newCap - used); }
+    function newRemaining(tid){ var used = NEW_CAP_SHARED ? newLearnedTotal() : (td(tid).newLearned||0); return Math.max(0, topicNewCap(tid) - used); }
     function topicAllSeen(tid){
       var t=DATA.topics.filter(function(x){return x.id===tid;})[0]; if(!t) return false;
       return t.chunks.filter(function(c){return (c.stage||0)===0;}).every(function(c){ var k=state.cards[c.id]; return k&&k.seen; });
@@ -446,9 +462,9 @@
         return {s: done?"doing":"todo", txt:"复习 "+done+"/"+(done+left)};
       }
       if(k==="learn"){
-        var n=x.newLearned||0, capHit = newRemaining(tid)===0;
+        var n=x.newLearned||0, cap=topicNewCap(tid), capHit = newRemaining(tid)===0;
         var ok = capHit || (x.learnExhausted && n>=1) || topicAllSeen(tid||state.topicId);
-        var txt = NEW_CAP_SHARED ? "新学 "+n+"（今日共 "+newLearnedTotal()+"/"+d.newCap+"）" : "新学 "+n+"/"+d.newCap;
+        var txt = NEW_CAP_SHARED ? "新学 "+n+"（今日共 "+newLearnedTotal()+"/"+cap+"）" : "新学 "+n+"/"+cap;
         return {s: ok?"done":(n?"doing":"todo"), txt:txt};
       }
       if(k==="practice"){
@@ -597,7 +613,7 @@
         var s0=t.chunks.filter(function(c){return (c.stage||0)===0;}).length;
         var b=document.createElement("button"); b.type="button";
         b.className="topic-btn"+(t.id===state.topicId?" active":"");
-        ensureDaily(); var x=state.daily.topics[t.id]; var hint = (topicDayDone(t.id)&&x ? '✅ 今日完成' : '新学 '+((x&&x.newLearned)||0)+' · 造句 '+((x&&x.sentToday)||0)+'/'+SENT_MIN)+'<br>今日新学名额剩 '+newRemaining(t.id);
+        ensureDaily(); var x=td(t.id); var hint = topicDayDone(t.id) ? '✅ 今日完成' : (NEW_CAP_SHARED ? ('新学 '+(x.newLearned||0)+' · 造句 '+(x.sentToday||0)+'/'+SENT_MIN+'<br>今日新学名额剩 '+newRemaining(t.id)) : ('新学 '+(x.newLearned||0)+'/'+topicNewCap(t.id)+' · 造句 '+(x.sentToday||0)+'/'+SENT_MIN));
         b.innerHTML='<div class="t">'+t.name+'</div><div class="e">'+hint+'</div>';
         b.onclick=function(){ state.topicId=t.id; save(); renderTopics(); refreshHome(); toast("今天学："+t.name); };
         row.appendChild(b);
@@ -884,14 +900,14 @@
       if(!flow.queue.length){
         ensureDaily(); if(!newBlocked() && newRemaining()>0) td().learnExhausted=true; save();
         setFlowTitle("新学词块","");
-        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">📚</div><h4>今日新学已满或本主题学完啦</h4><p style="color:var(--muted);font-size:13px">今天上限 '+state.daily.newCap+' 个新词块。</p></div><button type="button" class="btn btn-primary btn-full" id="ln-none">回首页</button></div>';
+        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">📚</div><h4>今日新学已满或本主题学完啦</h4><p style="color:var(--muted);font-size:13px">本主题今天上限 '+topicNewCap()+' 个新词块。</p></div><button type="button" class="btn btn-primary btn-full" id="ln-none">回首页</button></div>';
         document.getElementById("ln-none").onclick=closeFlow; return;
       }
       flow.i=0; flow.session.requeued=0; renderLearnSwipe();
     }
     function renderLearnSwipe(){
       var ch=flow.queue[flow.i];
-      ensureDaily(); state.daily.newSeen[ch.id]=true; save();
+      ensureDaily(); state.daily.newSeen[ch.id]=true; td().newSeen[ch.id]=true; save();
       var rep=state.daily.reappear[ch.id]||0;
       setFlowTitle("新学词块", progText());
       document.getElementById("flow-body").innerHTML=
@@ -912,7 +928,7 @@
     function learnLeft(ch){
       /* not an error, not counted toward 顽固词 */
       ensureDaily(); var d=state.daily, id=ch.id;
-      d.newLeftAny[id]=true;
+      d.newLeftAny[id]=true; td().newLeftAny[id]=true;
       if((d.reappear[id]||0) >= REQUEUE_MAX_PER_DAY){
         var card=ensureCard(id); card.seen=false; card.relearn=addDays(todayStr(),1);
         addLog("learn",0,10,{note:ch.lemma+" · 明天重新学"}); toast("「"+ch.lemma+"」明天再学，不占新词名额");
@@ -935,7 +951,7 @@
         ensureDaily(); if(!availableNew().length && newRemaining()>0) td().learnExhausted=true; markActive(); save();
         var dur=Math.round((Date.now()-flow.start)/1000);
         addLog("learn",flow.session.learned,dur,{note:"本批新学 "+flow.session.learned+" 个"});
-        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">🎉</div><h4>新学完成</h4></div><div class="summary-row"><span>本批</span><strong>'+flow.session.learned+'</strong></div><div class="summary-row"><span>今日累计</span><strong>'+(NEW_CAP_SHARED?newLearnedTotal():td().newLearned)+' / '+state.daily.newCap+(NEW_CAP_SHARED?'（全部主题共用）':'')+'</strong></div><button type="button" class="btn btn-primary btn-full" style="margin-top:14px" id="ln-done">回首页</button></div>';
+        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">🎉</div><h4>新学完成</h4></div><div class="summary-row"><span>本批</span><strong>'+flow.session.learned+'</strong></div><div class="summary-row"><span>今日累计</span><strong>'+(NEW_CAP_SHARED?newLearnedTotal():td().newLearned)+' / '+topicNewCap()+(NEW_CAP_SHARED?'（全部主题共用）':'（本主题）')+'</strong></div><button type="button" class="btn btn-primary btn-full" style="margin-top:14px" id="ln-done">回首页</button></div>';
         document.getElementById("ln-done").onclick=closeFlow; return;
       }
       renderLearnSwipe();
@@ -1067,7 +1083,7 @@
       }
       return Promise.resolve(sha256Fallback(str));
     }
-    if(/[?&]test=1/.test(location.search)) window.__ket={state:function(){return state;},save:save,load:load,ensureDaily:ensureDaily,dueCards:dueCards,availableNew:availableNew,flow:function(){return flow;},refreshHome:function(){refreshHome();},checkinStreak:checkinStreak,newRemaining:newRemaining,td:td,rowStatus:rowStatus,openFlow:openFlow,closeFlow:closeFlow,todayStr:todayStr,addDays:addDays,C:{REQUEUE_GAP:REQUEUE_GAP,REQUEUE_MAX_PER_DAY:REQUEUE_MAX_PER_DAY,NEW_CAP_REDUCED:NEW_CAP_REDUCED}};
+    if(/[?&]test=1/.test(location.search)) window.__ket={state:function(){return state;},save:save,load:load,ensureDaily:ensureDaily,dueCards:dueCards,availableNew:availableNew,flow:function(){return flow;},refreshHome:function(){refreshHome();},checkinStreak:checkinStreak,newRemaining:newRemaining,topicNewCap:topicNewCap,td:td,rowStatus:rowStatus,openFlow:openFlow,closeFlow:closeFlow,todayStr:todayStr,addDays:addDays,C:{REQUEUE_GAP:REQUEUE_GAP,REQUEUE_MAX_PER_DAY:REQUEUE_MAX_PER_DAY,NEW_CAP_REDUCED:NEW_CAP_REDUCED}};
     var booted=false;
     function enterApp(){
       document.body.classList.remove("locked");
