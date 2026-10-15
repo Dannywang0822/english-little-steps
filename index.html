@@ -257,7 +257,7 @@
           <input type="email" id="cl-email" placeholder="邮箱" autocomplete="username" autocapitalize="off" />
           <input type="password" id="cl-pass" placeholder="密码" autocomplete="current-password" />
           <div class="login-err" id="cl-err"></div>
-          <button type="submit" class="btn btn-primary btn-full" id="btn-cloud-login">登录并同步</button>
+          <button type="submit" class="btn btn-primary btn-full" id="btn-cloud-login" disabled>登录并同步</button>
         </form>
         <p class="auth-hint" id="cloud-login-hint">用已注册的邮箱登录，进度会同步到云端。云端正在迁移到国内服务，若连不上不影响学习，可用「游客继续」。</p>
       </div>
@@ -269,11 +269,11 @@
           <input type="password" id="cr-pass2" placeholder="再输入一次密码" autocomplete="new-password" minlength="8" />
           <div class="code-row">
             <input type="text" id="cr-code" placeholder="邮箱验证码" autocomplete="one-time-code" inputmode="numeric" maxlength="12" />
-            <button type="button" class="btn btn-ghost" id="btn-send-code">发送验证码</button>
+            <button type="button" class="btn btn-ghost" id="btn-send-code" disabled>发送验证码</button>
           </div>
           <div class="login-err" id="cr-err"></div>
           <div class="login-ok" id="cr-ok"></div>
-          <button type="submit" class="btn btn-primary btn-full" id="btn-cloud-reg">注册账号</button>
+          <button type="submit" class="btn btn-primary btn-full" id="btn-cloud-reg" disabled>注册账号</button>
         </form>
         <p class="auth-hint" id="cloud-reg-hint">先点「发送验证码」到邮箱，再填码注册。密码≥8 位且含字母和数字。可用任意邮箱注册多个账号；若连不上云端，请先用「游客继续」。</p>
       </div>
@@ -1450,11 +1450,34 @@
       if(/weak-password|password_too_weak|至少 8/i.test(m) || /password_too_weak|weak-password/i.test(code)) return "密码至少 8 位，且需包含字母和数字";
       if(/invalid-email|invalid_email|invalid_argument/i.test(m) && /邮箱|email/i.test(m)) return "邮箱格式不对";
       if(/invalid_email/i.test(code)) return "邮箱格式不对";
-      if(/云端未配置/.test(m)) return isPagesMirror()
-        ? ("请到腾讯云版登录："+TENCENT_HOSTING_URL)
-        : "云端暂不可用，请稍后再试或先用「游客继续」。";
+      if(/云端未配置|云端未就绪/.test(m)) return cloudUnavailableReason();
       if(/resource_exhausted|RATE_LIMITED|too_many|频繁/i.test(m) || /resource_exhausted/i.test(code)) return "尝试太频繁，请稍后再试；也可先用「游客继续」。";
       return m;
+    }
+
+
+    function cloudUnavailableReason(){
+      if(isPagesMirror()) return "本站是 GitHub Pages 镜像，请到腾讯云版登录";
+      if(window.KetCloud && KetCloud.lastError) return "云端未就绪："+KetCloud.lastError;
+      if(window.KetCloud && KetCloud.ready && !KetCloud.enabled) return "云端未就绪，请刷新后重试，或先用「游客继续」";
+      return "云端正在连接，请稍候…";
+    }
+    function setCloudAuthUi(ready, on){
+      if(isPagesMirror()) return;
+      var ids=["btn-cloud-login","btn-cloud-reg","btn-send-code","cl-email","cl-pass","cr-email","cr-pass","cr-pass2","cr-code"];
+      ids.forEach(function(id){
+        var el=document.getElementById(id);
+        if(!el) return;
+        if(id==="btn-send-code" && _sendCodeCooldown>0) return; /* cooldown owns this button */
+        el.disabled = !ready || !on;
+      });
+      var cl=document.getElementById("cl-err");
+      var cr=document.getElementById("cr-err");
+      if(ready && !on){
+        var why=cloudUnavailableReason();
+        if(cl && !cl.textContent) cl.textContent=why;
+        if(cr && !cr.textContent) cr.textContent=why;
+      }
     }
 
     function afterCloudAuth(user){
@@ -1476,7 +1499,7 @@
     document.getElementById("cloud-login-form").addEventListener("submit", function(e){
       e.preventDefault();
       var err=document.getElementById("cl-err"); err.textContent="";
-      if(!window.KetCloud || !KetCloud.enabled){ err.textContent=cloudMsg(new Error("云端未配置")); return; }
+      if(!window.KetCloud || !KetCloud.enabled){ err.textContent=cloudUnavailableReason(); return; }
       var email=document.getElementById("cl-email").value.trim();
       var pass=document.getElementById("cl-pass").value;
       var btn=document.getElementById("btn-cloud-login"); btn.disabled=true;
@@ -1500,7 +1523,7 @@
     document.getElementById("btn-send-code").addEventListener("click", function(){
       var err=document.getElementById("cr-err"), ok=document.getElementById("cr-ok");
       err.textContent=""; ok.textContent="";
-      if(!window.KetCloud || !KetCloud.enabled){ err.textContent=cloudMsg(new Error("云端未配置")); return; }
+      if(!window.KetCloud || !KetCloud.enabled){ err.textContent=cloudUnavailableReason(); return; }
       var email=document.getElementById("cr-email").value.trim();
       if(!email){ err.textContent="请先填写邮箱"; return; }
       var btn=document.getElementById("btn-send-code");
@@ -1520,7 +1543,7 @@
       e.preventDefault();
       var err=document.getElementById("cr-err"), ok=document.getElementById("cr-ok");
       err.textContent=""; ok.textContent="";
-      if(!window.KetCloud || !KetCloud.enabled){ err.textContent=cloudMsg(new Error("云端未配置")); return; }
+      if(!window.KetCloud || !KetCloud.enabled){ err.textContent=cloudUnavailableReason(); return; }
       var email=document.getElementById("cr-email").value.trim();
       var p1=document.getElementById("cr-pass").value, p2=document.getElementById("cr-pass2").value;
       var code=document.getElementById("cr-code").value.trim();
@@ -1570,12 +1593,14 @@
       }
       if(on){ b.textContent="云端已就绪"; b.classList.remove("off"); }
       else { b.textContent="本地模式（云端未就绪）"; b.classList.add("off"); }
-      if(loginHint) loginHint.textContent = on
-        ? "用邮箱登录后进度可同步到国内云端。也可先用「游客继续」。"
-        : "云端暂未就绪，请先点「游客继续」——进度保存在本机。正式登录请确认打开的是腾讯云托管域名。";
-      if(regHint) regHint.textContent = on
-        ? "先点「发送验证码」到邮箱，再填码注册。密码≥8 位且含字母和数字。"
-        : "本页云端未就绪时请先游客学习；要注册请打开腾讯云托管域名。";
+      if(loginHint){
+        if(on) loginHint.textContent="用邮箱登录后进度可同步到国内云端。也可先用「游客继续」。";
+        else loginHint.textContent=cloudUnavailableReason()+" 也可先用「游客继续」。";
+      }
+      if(regHint){
+        if(on) regHint.textContent="先点「发送验证码」到邮箱，再填码注册。密码≥8 位且含字母和数字。";
+        else regHint.textContent=cloudUnavailableReason()+" 注册需云端就绪后再试。";
+      }
     }
 
     function applyPagesMirrorGate(){
@@ -1610,17 +1635,24 @@
         return;
       }
 
+      setCloudAuthUi(false, false);
       var startCloud = window.KetCloud
         ? KetCloud.bootstrap().then(function(on){
             updateCloudBadge(!!on);
+            setCloudAuthUi(true, !!on);
             if(on && KetCloud.currentUser()){
               return afterCloudAuth(KetCloud.currentUser());
             }
             showLogin();
           })
-        : Promise.resolve().then(function(){ updateCloudBadge(false); showLogin(); });
+        : Promise.resolve().then(function(){ updateCloudBadge(false); setCloudAuthUi(true, false); showLogin(); });
 
-      startCloud.catch(function(){ updateCloudBadge(false); showLogin(); });
+      startCloud.catch(function(err){
+        if(window.KetCloud && !KetCloud.lastError) KetCloud.lastError=(err && err.message)||"bootstrap failed";
+        updateCloudBadge(false);
+        setCloudAuthUi(true, false);
+        showLogin();
+      });
     }
     bootAuth();
   })();

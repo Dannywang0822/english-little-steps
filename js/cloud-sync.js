@@ -71,6 +71,7 @@
   var KetCloud = {
     enabled: false,
     ready: false,
+    lastError: null,
     user: null,
     mode: "local", /* local | guest | cloud */
     _app: null,
@@ -87,24 +88,29 @@
     /** Load cloudbase-config.js then CDN; resolve with enabled bool */
     bootstrap: function () {
       var self = this;
+      self.lastError = null;
       return self._loadConfig()
         .then(function (cfg) {
           if (!isValidConfig(cfg)) {
             self.enabled = false;
             self.ready = true;
+            self.lastError = "缺少有效的 CloudBase envId（检查 cloudbase-config.js）";
             return false;
           }
           global.__CLOUDBASE_CONFIG__ = cfg;
           return self._initCloudBase(cfg).then(function () {
             self.enabled = true;
             self.ready = true;
+            self.lastError = null;
             return true;
           });
         })
         .catch(function (err) {
-          console.warn("[KetCloud] bootstrap failed, staying local:", err && err.message);
+          var msg = (err && (err.message || err.code)) || "unknown";
+          console.warn("[KetCloud] bootstrap failed, staying local:", msg);
           self.enabled = false;
           self.ready = true;
+          self.lastError = msg;
           return false;
         });
     },
@@ -235,7 +241,7 @@
     /** Step 1: send email OTP; stores verification_id on KetCloud._pendingVerification */
     sendRegisterCode: function (email) {
       var self = this;
-      if (!self.enabled) return Promise.reject(new Error("云端未配置"));
+      if (!self.enabled) return Promise.reject(new Error(self.lastError || "云端未就绪"));
       email = String(email || "").trim();
       if (!email) return Promise.reject(new Error("请先填写邮箱"));
       var auth = self._auth;
@@ -263,7 +269,7 @@
      */
     register: function (email, password, verificationCode) {
       var self = this;
-      if (!self.enabled) return Promise.reject(new Error("云端未配置"));
+      if (!self.enabled) return Promise.reject(new Error(self.lastError || "云端未就绪"));
       email = String(email || "").trim();
       password = String(password || "");
       verificationCode = String(verificationCode || "").trim();
@@ -362,7 +368,7 @@
 
     login: function (email, password) {
       var self = this;
-      if (!self.enabled) return Promise.reject(new Error("云端未配置"));
+      if (!self.enabled) return Promise.reject(new Error(self.lastError || "云端未就绪"));
       email = String(email || "").trim();
       password = String(password || "");
       var auth = self._auth;
