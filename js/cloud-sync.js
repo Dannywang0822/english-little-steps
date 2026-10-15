@@ -1,25 +1,26 @@
 /**
- * KetCloud — Phase1+2 sync scaffold (Firebase Auth + Firestore).
- * Loads only when window.__FIREBASE_CONFIG__ is a real (non-placeholder) config.
+ * KetCloud — CloudBase Auth + document DB (mainland China).
+ * Loads only when window.__CLOUDBASE_CONFIG__ has a real envId.
  * Without config: enabled=false; app stays on localStorage.
  *
- * Paths (see docs/cloud-sync-proposal.md):
- *   users/{uid}
- *   users/{uid}/meta/settings   — tts, activeTopicId, newCapShared
- *   users/{uid}/meta/progress   — streak, checkins, litCelebrated, daily, sentences...
- *   users/{uid}/cards/{chunkId}
- *   users/{uid}/logs/{autoId}
- *   users/{uid}/sentences/{autoId}
+ * MVP schema (single-doc bundle for speed; collections may still be created by HR):
+ *   user_bundles/{uid}  — { state, logs, tts, updatedAt, email, updatedAtMs }
+ *
+ * Public API unchanged: bootstrap, register, login, logout, currentUser,
+ * syncAfterLogin, schedulePush, flush, merge helpers, mode, hooks.
+ * No Firebase dual-write.
  */
 (function (global) {
   "use strict";
   var DEBOUNCE_MS = 1500;
   var PLACEHOLDER = /YOUR_|REPLACE_|xxxxx/i;
+  var SDK_CDN = "https://static.cloudbase.net/cloudbase-js-sdk/3.0.1/cloudbase.full.js";
+  var BUNDLE_COL = "user_bundles";
 
   function isValidConfig(c) {
     if (!c || typeof c !== "object") return false;
-    if (!c.apiKey || !c.projectId || !c.appId) return false;
-    return !PLACEHOLDER.test(String(c.apiKey) + c.projectId + c.appId);
+    if (!c.envId || typeof c.envId !== "string") return false;
+    return !PLACEHOLDER.test(c.envId);
   }
 
   function loadScript(src) {
@@ -33,11 +34,45 @@
     });
   }
 
+  function normalizeUser(u) {
+    if (!u) return null;
+    var uid = u.uid || u.id || u._id || (u.user && (u.user.uid || u.user.id)) || null;
+    var email = u.email || (u.user && u.user.email) || "";
+    if (!email && u.user_metadata) email = u.user_metadata.email || u.user_metadata.username || "";
+    if (!uid) return null;
+    return { uid: String(uid), email: email || "", raw: u };
+  }
+
+  function authError(err, fallback) {
+    if (!err) return new Error(fallback || "云端错误");
+    if (err instanceof Error) return err;
+    var msg = err.message || err.msg || err.code || fallback || "云端错误";
+    var e = new Error(String(msg));
+    if (err.code) e.code = err.code;
+    if (err.category) e.category = err.category;
+    return e;
+  }
+
+  function unwrapAuth(res) {
+    if (!res) return { data: null, error: new Error("空响应") };
+    if (res.error) return { data: null, error: authError(res.error) };
+    return { data: res.data != null ? res.data : res, error: null };
+  }
+
+  function docData(res) {
+    if (!res) return null;
+    var d = res.data;
+    if (Array.isArray(d)) return d.length ? d[0] : null;
+    if (d && typeof d === "object") return d;
+    return null;
+  }
+
   var KetCloud = {
     enabled: false,
     ready: false,
     user: null,
     mode: "local", /* local | guest | cloud */
+    _app: null,
     _db: null,
     _auth: null,
     _timer: null,
@@ -47,7 +82,7 @@
       for (var k in h) if (Object.prototype.hasOwnProperty.call(h, k)) this._hooks[k] = h[k];
     },
 
-    /** Try load firebase-config.js then CDN; resolve with enabled bool */
+    /** Load cloudbase-config.js then CDN; resolve with enabled bool */
     bootstrap: function () {
       var self = this;
       return self._loadConfig()
@@ -57,8 +92,8 @@
             self.ready = true;
             return false;
           }
-          global.__FIREBASE_CONFIG__ = cfg;
-          return self._initFirebase(cfg).then(function () {
+          global.__CLOUDBASE_CONFIG__ = cfg;
+          return self._initCloudBase(cfg).then(function () {
             self.enabled = true;
             self.ready = true;
             return true;
@@ -73,80 +108,247 @@
     },
 
     _loadConfig: function () {
-      if (isValidConfig(global.__FIREBASE_CONFIG__)) {
-        return Promise.resolve(global.__FIREBASE_CONFIG__);
+      if (isValidConfig(global.__CLOUDBASE_CONFIG__)) {
+        return Promise.resolve(global.__CLOUDBASE_CONFIG__);
       }
       return new Promise(function (resolve) {
         var s = document.createElement("script");
-        s.src = "firebase-config.js";
+        s.src = "cloudbase-config.js";
         s.async = true;
         s.onload = function () {
-          resolve(global.__FIREBASE_CONFIG__ || null);
+          resolve(global.__CLOUDBASE_CONFIG__ || null);
         };
         s.onerror = function () {
-          resolve(null); /* missing file = local mode */
+          resolve(null);
         };
         document.head.appendChild(s);
       });
     },
 
-    _initFirebase: function (cfg) {
+    _initCloudBase: function (cfg) {
       var self = this;
-      var base = "https://www.gstatic.com/firebasejs/10.14.1/";
-      return loadScript(base + "firebase-app-compat.js")
-        .then(function () { return loadScript(base + "firebase-auth-compat.js"); })
-        .then(function () { return loadScript(base + "firebase-firestore-compat.js"); })
-        .then(function () {
-          if (!global.firebase) throw new Error("firebase global missing");
-          if (!firebase.apps.length) firebase.initializeApp(cfg);
-          self._auth = firebase.auth();
-          self._db = firebase.firestore();
+      return loadScript(SDK_CDN).then(function () {
+        var cb = global.cloudbase || global.cloud;
+        if (!cb || typeof cb.init !== "function") {
+          throw new Error("cloudbase global missing");
+        }
+        var initOpts = { env: cfg.envId, region: cfg.region || "ap-shanghai" };
+        if (cfg.accessKey) initOpts.accessKey = cfg.accessKey;
+        self._app = cb.init(initOpts);
+
+        /* v2: auth(); v3: auth property — support both */
+        var authRef = self._app.auth;
+        if (typeof authRef === "function") {
           try {
-            self._db.enablePersistence({ synchronizeTabs: true }).catch(function () {});
-          } catch (e) {}
-          self._auth.onAuthStateChanged(function (u) {
+            self._auth = self._app.auth({ persistence: "local" });
+          } catch (e1) {
+            self._auth = self._app.auth();
+          }
+        } else {
+          self._auth = authRef;
+        }
+        if (!self._auth) throw new Error("CloudBase auth unavailable");
+
+        self._db = typeof self._app.database === "function"
+          ? self._app.database()
+          : self._app.database;
+        if (!self._db) throw new Error("CloudBase database unavailable");
+
+        return self._bindAuthListener().then(function () {
+          return self._hydrateSession();
+        });
+      });
+    },
+
+    _bindAuthListener: function () {
+      var self = this;
+      var auth = self._auth;
+      try {
+        if (typeof auth.onAuthStateChange === "function") {
+          auth.onAuthStateChange(function (event, session) {
+            var u = null;
+            if (session && session.user) u = normalizeUser(session.user);
+            else if (event === "SIGNED_OUT") u = null;
             self.user = u;
             if (self._hooks.onAuth) self._hooks.onAuth(u);
           });
-        });
+          return Promise.resolve();
+        }
+        if (typeof auth.onLoginStateChanged === "function") {
+          auth.onLoginStateChanged(function (params) {
+            var et = params && params.data && params.data.eventType;
+            if (et === "sign_out" || et === "credentials_error") {
+              self.user = null;
+            } else {
+              self.user = normalizeUser(auth.currentUser || (params && params.user));
+            }
+            if (self._hooks.onAuth) self._hooks.onAuth(self.user);
+          });
+          return Promise.resolve();
+        }
+      } catch (e) {
+        console.warn("[KetCloud] auth listener", e);
+      }
+      return Promise.resolve();
+    },
+
+    _hydrateSession: function () {
+      var self = this;
+      var auth = self._auth;
+      /* v3 getSession */
+      if (typeof auth.getSession === "function") {
+        return auth.getSession().then(function (res) {
+          var u = unwrapAuth(res);
+          if (u.error) return;
+          var sess = u.data && (u.data.session || u.data);
+          var user = (sess && sess.user) || (u.data && u.data.user) || null;
+          self.user = normalizeUser(user);
+          if (self._hooks.onAuth) self._hooks.onAuth(self.user);
+        }).catch(function () {});
+      }
+      /* v2 getLoginState / hasLoginState */
+      if (typeof auth.getLoginState === "function") {
+        return Promise.resolve(auth.getLoginState()).then(function (state) {
+          var user = state && (state.user || state);
+          if (state && state.loginType === undefined && !state.user && auth.currentUser) {
+            user = auth.currentUser;
+          }
+          self.user = normalizeUser(user || auth.currentUser);
+          if (self._hooks.onAuth) self._hooks.onAuth(self.user);
+        }).catch(function () {});
+      }
+      if (auth.currentUser) {
+        self.user = normalizeUser(auth.currentUser);
+        if (self._hooks.onAuth) self._hooks.onAuth(self.user);
+      }
+      return Promise.resolve();
     },
 
     register: function (email, password) {
       var self = this;
       if (!self.enabled) return Promise.reject(new Error("云端未配置"));
-      return self._auth.createUserWithEmailAndPassword(email, password).then(function (cred) {
-        var uid = cred.user.uid;
-        return self._db.collection("users").doc(uid).set({
-          email: email,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          profile: { displayName: "小学员" }
-        }, { merge: true }).then(function () { return cred.user; });
-      });
+      email = String(email || "").trim();
+      password = String(password || "");
+      if (!email || !password) return Promise.reject(new Error("请填写邮箱和密码"));
+      if (password.length < 8) return Promise.reject(new Error("密码至少 8 位，且需包含字母和数字"));
+
+      var auth = self._auth;
+
+      /* Prefer Auth v3 signUp (may require email OTP if enabled in console) */
+      if (typeof auth.signUp === "function") {
+        return auth.signUp({ email: email, password: password }).then(function (res) {
+          var u = unwrapAuth(res);
+          if (u.error) throw u.error;
+          var data = u.data || {};
+          /* OTP gate: console has email OTP on — UI is password-only for now */
+          if (typeof data.verifyOtp === "function") {
+            var err = new Error("注册需要邮箱验证码，请在 CloudBase 控制台开启邮箱验证码（可用内置发信）后重试；或先用游客继续。");
+            err.code = "otp_required";
+            throw err;
+          }
+          var user = normalizeUser(data.user || (data.session && data.session.user) || data);
+          if (!user) {
+            /* Some builds return session only after verify; try password login */
+            return self.login(email, password);
+          }
+          self.user = user;
+          return self._ensureUserBundleMeta(user).then(function () { return user; });
+        });
+      }
+
+      /* Legacy v1-style email register (sends activation mail; needs SMTP) */
+      if (typeof auth.signUpWithEmailAndPassword === "function") {
+        return auth.signUpWithEmailAndPassword(email, password).then(function () {
+          var err = new Error("验证邮件已发送，请打开邮箱点击激活链接后再登录；也可先用游客继续。");
+          err.code = "email_activation_sent";
+          throw err;
+        });
+      }
+
+      return Promise.reject(new Error("当前 SDK 不支持注册，请升级或检查 CloudBase 登录方式"));
     },
 
     login: function (email, password) {
-      if (!this.enabled) return Promise.reject(new Error("云端未配置"));
-      return this._auth.signInWithEmailAndPassword(email, password).then(function (c) { return c.user; });
+      var self = this;
+      if (!self.enabled) return Promise.reject(new Error("云端未配置"));
+      email = String(email || "").trim();
+      password = String(password || "");
+      var auth = self._auth;
+
+      function afterUser(user) {
+        self.user = user;
+        return user;
+      }
+
+      /* Auth v3 */
+      if (typeof auth.signInWithPassword === "function") {
+        return auth.signInWithPassword({ email: email, password: password }).then(function (res) {
+          var u = unwrapAuth(res);
+          if (u.error) throw u.error;
+          var data = u.data || {};
+          var user = normalizeUser(data.user || (data.session && data.session.user) || data);
+          if (!user) throw new Error("登录成功但未返回用户信息");
+          return afterUser(user);
+        });
+      }
+
+      /* Legacy email password */
+      if (typeof auth.signInWithEmailAndPassword === "function") {
+        return auth.signInWithEmailAndPassword(email, password).then(function (loginState) {
+          var user = normalizeUser(
+            (loginState && loginState.user) ||
+            (loginState && loginState.data && loginState.data.user) ||
+            auth.currentUser ||
+            loginState
+          );
+          if (!user) throw new Error("登录成功但未返回用户信息");
+          return afterUser(user);
+        });
+      }
+
+      /* v2 unified signIn */
+      if (typeof auth.signIn === "function") {
+        return auth.signIn({ username: email, password: password }).then(function (loginState) {
+          var user = normalizeUser((loginState && loginState.user) || auth.currentUser);
+          if (!user) throw new Error("登录成功但未返回用户信息");
+          return afterUser(user);
+        });
+      }
+
+      return Promise.reject(new Error("当前 SDK 不支持密码登录"));
     },
 
     logout: function () {
       var self = this;
       return self.flush().catch(function () {}).then(function () {
-        if (self._auth) return self._auth.signOut();
+        if (!self._auth) return;
+        if (typeof self._auth.signOut === "function") {
+          return self._auth.signOut().then(function (res) {
+            if (res && res.error) throw authError(res.error);
+          });
+        }
       }).then(function () {
         self.user = null;
         self.mode = "local";
       });
     },
 
-    currentUser: function () { return this.user || (this._auth && this._auth.currentUser) || null; },
+    currentUser: function () {
+      if (this.user) return this.user;
+      if (this._auth && this._auth.currentUser) {
+        this.user = normalizeUser(this._auth.currentUser);
+        return this.user;
+      }
+      return null;
+    },
 
     schedulePush: function () {
       var self = this;
       if (!self.enabled || !self.currentUser() || self.mode !== "cloud") return;
       clearTimeout(self._timer);
-      self._timer = setTimeout(function () { self.flush().catch(function (e) { console.warn("[KetCloud] push", e); }); }, DEBOUNCE_MS);
+      self._timer = setTimeout(function () {
+        self.flush().catch(function (e) { console.warn("[KetCloud] push", e); });
+      }, DEBOUNCE_MS);
     },
 
     flush: function () {
@@ -212,103 +414,60 @@
       return false;
     },
 
+    _ensureUserBundleMeta: function (user) {
+      if (!user || !this._db) return Promise.resolve();
+      var now = Date.now();
+      return this._db.collection(BUNDLE_COL).doc(user.uid).set({
+        email: user.email || "",
+        profile: { displayName: "小学员" },
+        updatedAtMs: now,
+        updatedAt: now
+      }).catch(function (e) {
+        console.warn("[KetCloud] ensure meta", e);
+      });
+    },
+
     _pullBundle: function (uid) {
       var db = this._db;
-      var root = db.collection("users").doc(uid);
-      return Promise.all([
-        root.get(),
-        root.collection("meta").doc("settings").get(),
-        root.collection("meta").doc("progress").get(),
-        root.collection("cards").get(),
-        root.collection("logs").orderBy("timestamp", "desc").limit(120).get().catch(function () { return { empty: true, docs: [] }; }),
-        root.collection("sentences").get().catch(function () { return { empty: true, docs: [] }; })
-      ]).then(function (parts) {
-        var userDoc = parts[0], settings = parts[1], progress = parts[2], cardsSnap = parts[3], logsSnap = parts[4], sentSnap = parts[5];
-        if (!userDoc.exists && (!progress.exists)) {
+      return db.collection(BUNDLE_COL).doc(uid).get().then(function (res) {
+        var doc = docData(res);
+        if (!doc) return null;
+        /* Full bundle stored on the doc (MVP). Ignore meta-only rows. */
+        if (!doc.state && !doc.logs && !doc.tts) {
+          if (doc.updatedAtMs || doc.email) return null;
           return null;
         }
-        var prog = progress.exists ? progress.data() : {};
-        var set = settings.exists ? settings.data() : {};
-        var cards = {};
-        cardsSnap.forEach(function (d) { cards[d.id] = d.data(); });
-        var logs = [];
-        if (logsSnap.forEach) logsSnap.forEach(function (d) { logs.push(d.data()); });
-        var sentences = [];
-        if (sentSnap.forEach) sentSnap.forEach(function (d) { sentences.push(d.data()); });
-        var state = {
-          topicId: set.activeTopicId || "school",
-          cards: cards,
-          daily: prog.daily || {},
-          streak: prog.streak || 0,
-          lastActiveDate: prog.lastActiveDate || null,
-          sentences: sentences,
-          activeDays: prog.activeDays || {},
-          checkins: prog.checkinDays || prog.checkins || {},
-          litCelebrated: prog.litCelebrated || {},
-          allLitCelebrated: !!prog.allLitCelebrated,
-          _litSeeded: true
-        };
         return {
-          state: state,
-          logs: logs,
-          tts: set.tts || null,
-          updatedAt: (prog.updatedAtMs) || 0
+          state: doc.state || null,
+          logs: Array.isArray(doc.logs) ? doc.logs : [],
+          tts: doc.tts || null,
+          updatedAt: doc.updatedAtMs || doc.updatedAt || 0
         };
+      }).catch(function (err) {
+        console.warn("[KetCloud] pull", err);
+        /* Missing collection / permission → treat as empty cloud */
+        return null;
       });
     },
 
     _pushBundle: function (uid, bundle) {
       if (!bundle || !bundle.state) return Promise.resolve();
       var db = this._db;
-      var root = db.collection("users").doc(uid);
-      var s = bundle.state;
       var now = Date.now();
-      var batch = db.batch();
-      batch.set(root, {
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      var u = this.currentUser();
+      var payload = {
+        uid: uid,
+        email: (u && u.email) || "",
+        state: bundle.state,
+        logs: (bundle.logs || []).slice(0, 120),
+        tts: bundle.tts || null,
+        updatedAt: now,
+        updatedAtMs: now,
         profile: { displayName: "小学员" }
-      }, { merge: true });
-      batch.set(root.collection("meta").doc("settings"), {
-        tts: bundle.tts || { slow: false, autoRead: true },
-        activeTopicId: s.topicId || "school",
-        newCapShared: false,
-        updatedAtMs: now
-      }, { merge: true });
-      batch.set(root.collection("meta").doc("progress"), {
-        streak: s.streak || 0,
-        lastActiveDate: s.lastActiveDate || null,
-        checkinDays: s.checkins || {},
-        litCelebrated: s.litCelebrated || {},
-        allLitCelebrated: !!s.allLitCelebrated,
-        activeDays: s.activeDays || {},
-        daily: s.daily || {},
-        updatedAtMs: now
-      }, { merge: true });
-      return batch.commit().then(function () {
-        var writes = [];
-        var cards = s.cards || {};
-        Object.keys(cards).forEach(function (id) {
-          var c = Object.assign({}, cards[id]);
-          if (!c.updatedAt) c.updatedAt = now;
-          writes.push(root.collection("cards").doc(id).set(c, { merge: true }));
-        });
-        /* sentences: replace-ish — write each with stable id if present */
-        (s.sentences || []).slice(-200).forEach(function (sent, i) {
-          var sid = sent.id || ("s_" + (sent.ts || i) + "_" + (sent.chunkId || i));
-          writes.push(root.collection("sentences").doc(String(sid)).set(sent, { merge: true }));
-        });
-        (bundle.logs || []).slice(0, 80).forEach(function (log) {
-          var lid = log.id || ("l_" + (log.timestamp || Date.now()) + "_" + Math.random().toString(36).slice(2, 7));
-          writes.push(root.collection("logs").doc(String(lid)).set(log, { merge: true }));
-        });
-        /* chunk writes to avoid huge Promise.all */
-        var chain = Promise.resolve();
-        for (var i = 0; i < writes.length; i += 40) {
-          (function (chunk) {
-            chain = chain.then(function () { return Promise.all(chunk); });
-          })(writes.slice(i, i + 40));
-        }
-        return chain;
+      };
+      return db.collection(BUNDLE_COL).doc(uid).set(payload).catch(function (err) {
+        console.warn("[KetCloud] push failed", err);
+        throw authError(err, "云端暂存失败，本机进度已保存，稍后再试同步。");
       });
     },
 
@@ -358,7 +517,6 @@
     var newer = aU >= bU ? a : b;
     var older = aU >= bU ? b : a;
     var out = Object.assign({}, older, newer);
-    /* conservative: higher errors, shorter due wins if close */
     out.errors = Math.max(a.errors || 0, b.errors || 0);
     if ((a.stubborn || b.stubborn)) out.stubborn = true;
     if (a.due && b.due) out.due = a.due < b.due ? a.due : b.due;
@@ -382,7 +540,6 @@
     if (!a) return b || {};
     if (!b) return a;
     if ((a.date || "") === (b.date || "")) {
-      /* same day: prefer max counters, union topic maps */
       var out = Object.assign({}, b, a);
       out.newLearned = Math.max(a.newLearned || 0, b.newLearned || 0);
       out.topics = Object.assign({}, b.topics || {}, a.topics || {});

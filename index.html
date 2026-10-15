@@ -248,8 +248,8 @@
       <div class="auth-pane" id="pane-register">
         <form id="cloud-reg-form" autocomplete="on">
           <input type="email" id="cr-email" placeholder="邮箱（例如你的 Gmail）" autocomplete="email" autocapitalize="off" />
-          <input type="password" id="cr-pass" placeholder="设置密码（至少 6 位）" autocomplete="new-password" minlength="6" />
-          <input type="password" id="cr-pass2" placeholder="再输入一次密码" autocomplete="new-password" minlength="6" />
+          <input type="password" id="cr-pass" placeholder="设置密码（至少 8 位，含字母和数字）" autocomplete="new-password" minlength="8" />
+          <input type="password" id="cr-pass2" placeholder="再输入一次密码" autocomplete="new-password" minlength="8" />
           <div class="login-err" id="cr-err"></div>
           <div class="login-ok" id="cr-ok"></div>
           <button type="submit" class="btn btn-primary btn-full" id="btn-cloud-reg">注册账号</button>
@@ -1198,7 +1198,7 @@
     });
     document.getElementById("btn-clear-log").onclick=function(){ try{localStorage.setItem(LOG_KEY,"[]");}catch(e){} renderLog(); toast("记录已清空"); };
 
-    /* ===== Auth: Guest / Email (Firebase when configured) / optional local PIN ===== */
+    /* ===== Auth: Guest / Email (CloudBase when configured) / optional local PIN ===== */
     var AUTH_KEY="ket_auth_v1";
     var AUTH_MODE_KEY="ket_auth_mode_v1"; /* guest | pin | cloud */
     var USER_HASH="662c67141c20e7f8730607d8a22aab33088f766c28101b554f1a177e22d45dc7";
@@ -1307,13 +1307,18 @@
 
     function cloudMsg(err){
       var m=(err && (err.message||err.code))||"出错了";
-      if(/invalid-api-key|API key/i.test(m)) return "Firebase 配置无效，请检查 firebase-config.js";
-      if(/network|unavailable|Failed to fetch|timeout|CORS/i.test(m)) return "暂时连不上云端，请先点「游客继续」——进度会保存在本机；云端恢复后可用同一邮箱注册并选择导入。";
-      if(/email-already/i.test(m)) return "这个邮箱已经注册过，去「邮箱登录」试试";
-      if(/wrong-password|user-not-found|invalid-credential/i.test(m)) return "邮箱或密码不对";
-      if(/weak-password/i.test(m)) return "密码至少 6 位";
-      if(/invalid-email/i.test(m)) return "邮箱格式不对";
-      if(/云端未配置/.test(m)) return "还没配置 Firebase：复制 firebase-config.example.js 为 firebase-config.js 并填入项目信息";
+      var code=(err && err.code)||"";
+      if(/otp_required|email_activation_sent/i.test(code) || /验证码|验证邮件|激活链接/.test(m)) return m;
+      if(/invalid-api-key|API key|envId|YOUR_ENV/i.test(m)) return "CloudBase 配置无效，请检查 cloudbase-config.js 的 envId";
+      if(/permission_denied|安全域名|cors permission|not in.*domains/i.test(m)) return "当前域名未加入 CloudBase 安全来源。MVP 请用 CloudBase 静态托管域名打开；或升级后把本站域名加入白名单。也可先用「游客继续」。";
+      if(/network|unavailable|Failed to load|Failed to fetch|timeout|CORS|unreachable/i.test(m)) return "暂时连不上云端，请先点「游客继续」——进度会保存在本机；云端恢复后可用同一邮箱注册并选择导入。";
+      if(/email-already|already_exists|failed_precondition|已被注册/i.test(m) || /already_exists|failed_precondition/i.test(code)) return "这个邮箱已经注册过，去「邮箱登录」试试";
+      if(/wrong-password|user-not-found|invalid-credential|invalid_password|not_found/i.test(m) || /invalid_password|not_found/i.test(code)) return "邮箱或密码不对";
+      if(/weak-password|password_too_weak|至少 8/i.test(m) || /password_too_weak|weak-password/i.test(code)) return "密码至少 8 位，且需包含字母和数字";
+      if(/invalid-email|invalid_email|invalid_argument/i.test(m) && /邮箱|email/i.test(m)) return "邮箱格式不对";
+      if(/invalid_email/i.test(code)) return "邮箱格式不对";
+      if(/云端未配置/.test(m)) return "还没配置 CloudBase：请设置 cloudbase-config.js 的 envId";
+      if(/resource_exhausted|RATE_LIMITED/i.test(m) || /resource_exhausted/i.test(code)) return "尝试太频繁，请稍后再试；也可先用「游客继续」。";
       return m;
     }
 
@@ -1350,7 +1355,8 @@
       if(!window.KetCloud || !KetCloud.enabled){ err.textContent=cloudMsg(new Error("云端未配置")); return; }
       var email=document.getElementById("cr-email").value.trim();
       var p1=document.getElementById("cr-pass").value, p2=document.getElementById("cr-pass2").value;
-      if(p1.length<6){ err.textContent="密码至少 6 位"; return; }
+      if(p1.length<8){ err.textContent="密码至少 8 位，且需包含字母和数字"; return; }
+      if(!/[A-Za-z]/.test(p1) || !/[0-9]/.test(p1)){ err.textContent="密码需同时包含字母和数字"; return; }
       if(p1!==p2){ err.textContent="两次密码不一致"; return; }
       var btn=document.getElementById("btn-cloud-reg"); btn.disabled=true;
       KetCloud.register(email, p1).then(function(user){
@@ -1383,11 +1389,11 @@
       var b=document.getElementById("cloud-badge");
       if(!b) return;
       if(on){ b.textContent="云端已就绪"; b.classList.remove("off"); }
-      else { b.textContent="本地模式（未配置 Firebase）"; b.classList.add("off"); }
+      else { b.textContent="本地模式（未配置 CloudBase）"; b.classList.add("off"); }
       var hint=document.getElementById("cloud-login-hint");
       if(hint) hint.textContent = on
-        ? "用邮箱登录后进度可同步。云端正在迁移到国内服务，若连不上不影响学习，可用「游客继续」。"
-        : "云端暂未就绪，请先点「游客继续」——进度保存在本机，云端恢复后可再注册并导入。";
+        ? "用邮箱登录后进度可同步到国内云端。若当前域名未加白名单，请用 CloudBase 托管域名打开，或先用「游客继续」。"
+        : "云端暂未就绪，请先点「游客继续」——进度保存在本机，配置 CloudBase 后可再注册并导入。";
     }
 
     function bootAuth(){

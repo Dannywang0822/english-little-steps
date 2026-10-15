@@ -73,40 +73,37 @@ python3 -m http.server 8765
 - 点 🔊 不会触发左右滑卡（按下事件不再往卡片传，滑卡逻辑也会忽略从 🔊 上开始的拖动）。朗读不计入 40 分钟时长。
 
 
-## 云端同步（Firebase · Phase1+2）
+## 云端同步（腾讯云 CloudBase · 大陆直连）
 
-未配置时应用自动走 **纯 localStorage**（与以前一样）。配置后可用邮箱注册/登录，进度同步到 Firestore。
+未配置时应用自动走 **纯 localStorage**。配置 `cloudbase-config.js` 后可用邮箱注册/登录，进度同步到 CloudBase 文档库。
 
-### 一次性配置（Danny）
+> 已从 Firebase 迁出（不双写）。Firebase 相关文件仅作历史参考。
 
-1. 打开 [Firebase Console](https://console.firebase.google.com/) 新建（或选用）项目。
-2. 添加 **Web App**，复制配置对象。
-3. 在本仓库根目录：
-   ```bash
-   cp firebase-config.example.js firebase-config.js
-   ```
-   把 `YOUR_*` 占位符换成你的 Web 配置。**`firebase-config.js` 已在 `.gitignore`，不要提交。**
-4. Authentication → Sign-in method → 启用 **Email/Password**。
-5. Firestore → 创建数据库（生产模式即可）→ 规则里粘贴仓库根目录的 `firestore.rules` 并发布。
-6. 本地用静态服务打开页面（或 GitHub Pages）。右上角应显示「云端已就绪」。
-7. **第一个账号在应用内注册**：打开「注册」页，用邮箱（例如 `oppodanny@gmail.com`）和你自己设的密码注册。密码只保存在 Firebase Auth，**不要**写进 `firebase-config.js`、`index.html`、README 或任何 git 提交。
+### 一次性配置（Danny / HR）
+
+1. 腾讯云 CloudBase 开通环境（本项目 envId：`english-little-steps-d0a2b84764b`，上海）。
+2. 登录方式：开启 **用户名密码**（邮箱+密码登录）；应用内注册还需 **邮箱验证码（内置发信）** 或 SMTP。
+3. 文档库创建集合 `user_bundles`，规则仅本人可读写（`_id == auth.uid`）。
+4. 根目录已有 `cloudbase-config.js`（`envId` + `region`，可公开）。示例见 `cloudbase-config.example.js`。
+5. **域名**：体验版不能加 GitHub Pages → MVP 请部署到 CloudBase 静态托管（`*.tcloudbaseapp.com`）。步骤见 `docs/cloudbase-domain.md`。
+6. 密码只存在 CloudBase Auth，**不要**写进仓库。
 
 ### 登录页三种方式
 
 | 方式 | 行为 |
 |---|---|
 | **游客继续** | 只用本机 localStorage，不连云端 |
-| **邮箱登录** | Firebase Auth；登录后拉取/合并云端进度 |
-| **注册** | 创建邮箱账号后自动进入并同步 |
+| **邮箱登录** | CloudBase Auth；登录后拉取/合并云端进度 |
+| **注册** | 创建邮箱账号后自动进入并同步（需控制台注册通道就绪） |
 | 家长本地锁（折叠） | 旧的前端 PIN，**不是**云端安全；可选 |
 
-同步策略摘要见 `docs/cloud-sync-proposal.md`（卡片 `updatedAt`+保守间隔；打卡并集；句子 max；TTS 取较新；写操作 debounce ~1.5s；启用 Firestore 离线持久化）。
+同步策略摘要见 `docs/cloud-sync-proposal.md` / `docs/china-cloud-plan.md`（卡片保守合并；打卡并集；句子 max；TTS 取较新；写操作 debounce ~1.5s）。MVP 整包存在 `user_bundles/{uid}`。
 
 ### 隐私
 
 - 云端 `displayName` 默认「小学员」，不要存孩子真名/学校/手机。
-- Security Rules：仅 `request.auth.uid == userId` 可读写自己的数据。
-- 不要把服务账号 JSON 或 Admin SDK 密钥放进本仓库。
+- 安全规则：仅登录用户可读写自己的 `user_bundles` 文档。
+- 不要把 Admin / secret 密钥放进本仓库。
 
 ## 登录锁（轻量前端锁 · 可选）
 

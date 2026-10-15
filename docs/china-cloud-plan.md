@@ -1,7 +1,11 @@
 # 英语小步走 · 大陆可达云端迁移方案
 
-> 状态：**仅方案，未实现** · 交审 · 2026-10-15  
-> 背景：Firebase Auth/Firestore 在中国大陆常不可达；注册/登录报网络错误。HR 要求：禁止「请开代理」式方案；先方案后实现。
+> 状态：**已拍板 CloudBase；驱动已本地实现（待 HR 审后推送/托管）** · 2026-10-15  
+> 背景：Firebase Auth/Firestore 在中国大陆常不可达；注册/登录报网络错误。HR 已拍板腾讯云 CloudBase；止血文案已上线；本轮切驱动、不双写 Firebase。
+>
+> **域名：** 体验版不能加 GitHub Pages → MVP 用 CloudBase 静态托管（见 `docs/cloudbase-domain.md`）。
+>
+> **MVP 存储：** 集合 `user_bundles`，文档 `_id = uid`，整包 `{ state, logs, tts, updatedAt, updatedAtMs, email }`（单文档加速上线；日后可再拆 cards/logs）。
 
 ---
 
@@ -193,3 +197,15 @@ Rules：`request.auth.uid == userId` 才能读写自己的树（`firestore.rules
 | 禁止项 | 不把「开代理」当方案；不新建 LeanCloud；不以 CF Workers 作大陆主路径 |
 
 **通过后实现顺序建议：** ① 止血文案交审上线 → ② 开通 CloudBase 出适配 PoC → ③ 完整 MVP 再交审推 Pages。
+
+
+---
+
+## 11. 实现备注（2026-10-15）
+
+- 驱动：`js/cloud-sync.js` → CloudBase Web SDK CDN `3.0.1`（`cloudbase.full.js`）
+- 配置：`cloudbase-config.js`（`envId` + `region`）；Firebase 配置不再加载
+- Auth：`signInWithPassword({ email, password })`；`signUp` 若控制台要求 OTP 会返回明确文案（需开邮箱验证码/内置发信）
+- DB：`user_bundles/{uid}` 整包读写；合并逻辑未改
+- 域名：见 `docs/cloudbase-domain.md` Option A
+- **未推送 / 未代登 CLI 部署**（需 Danny `tcb login`）
