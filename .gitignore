@@ -5,3 +5,4 @@ serviceAccount*.json
 *-firebase-adminsdk*.json
 .env
 .env.*
+_cloudbase_hosting/

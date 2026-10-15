@@ -591,6 +591,8 @@
           sentences: sentences,
           activeDays: activeDays,
           checkins: checkins,
+          planStartedAt: earlierDate(ls.planStartedAt, cs.planStartedAt),
+          stage0PassedAt: earlierDate(ls.stage0PassedAt, cs.stage0PassedAt),
           litCelebrated: lit,
           allLitCelebrated: !!(ls.allLitCelebrated || cs.allLitCelebrated),
           _litSeeded: true
@@ -646,6 +648,11 @@
     return (aU || 0) >= (bU || 0) ? a : b;
   }
 
+  function earlierDate(a, b) {
+    if (!a) return b || null;
+    if (!b) return a;
+    return a < b ? a : b;
+  }
   function newerDate(a, b) {
     if (!a) return b;
     if (!b) return a;

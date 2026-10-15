@@ -39,6 +39,17 @@
     .road .now{font-size:10px;background:var(--green-soft);color:var(--green);padding:1px 6px;border-radius:999px;margin-left:4px;font-weight:700}
     .pass-box{background:var(--bg);border-radius:12px;padding:10px 12px;margin-top:8px;font-size:12px;color:#445}
     .pass-box strong{color:var(--primary)}
+    /* Roadmap calendar/check-in progress (product defaults: 84 calendar days / 60 check-in days) */
+    .road-prog{background:var(--bg);border-radius:12px;padding:12px;margin-bottom:12px;border:1px solid var(--border)}
+    .road-prog-row{margin-top:10px}
+    .road-prog-row:first-child{margin-top:0}
+    .road-prog-lab{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;font-weight:700;margin-bottom:6px}
+    .road-prog-lab .sub{font-size:11px;font-weight:600;color:var(--muted)}
+    .road-prog-track{height:10px;background:#e7ebf3;border-radius:999px;overflow:hidden}
+    .road-prog-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,var(--primary),#7b93ff);transition:width .35s ease}
+    .road-prog-fill.green{background:linear-gradient(90deg,var(--green),#34d399)}
+    .road-prog-fill.orange{background:linear-gradient(90deg,var(--orange),#fdb022)}
+    .road-prog-meta{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4}
     .lights{display:flex;gap:8px;flex-wrap:wrap}
     .light{flex:1;min-width:95px;background:var(--bg);border-radius:12px;padding:12px 10px;text-align:center;border:1.5px solid var(--border)}
     .light.on{background:var(--green-soft);border-color:#86efac}
@@ -301,6 +312,23 @@
 
     <section>
       <div class="sec-h"><h2>我的英语路线图</h2><span class="hint">长期目标：雅思 8</span></div>
+      <div class="road-prog" id="road-prog" aria-label="路线图进度">
+        <div class="road-prog-row" id="rp-time-s0">
+          <div class="road-prog-lab"><span>⏱ 时间进度</span><span class="sub" id="rp-time-label">阶段0日历</span></div>
+          <div class="road-prog-track"><div class="road-prog-fill" id="rp-time-fill"></div></div>
+          <div class="road-prog-meta" id="rp-time-meta">已用 0/84 天（阶段0日历）</div>
+        </div>
+        <div class="road-prog-row" id="rp-time-s1" style="display:none">
+          <div class="road-prog-lab"><span>⏱ 阶段1时间</span><span class="sub">日历进度</span></div>
+          <div class="road-prog-track"><div class="road-prog-fill orange" id="rp-time-s1-fill"></div></div>
+          <div class="road-prog-meta" id="rp-time-s1-meta">已用 0/84 天（阶段1日历）</div>
+        </div>
+        <div class="road-prog-row" id="rp-check">
+          <div class="road-prog-lab"><span>✅ 已打卡进度</span><span class="sub" id="rp-check-label">习惯目标</span></div>
+          <div class="road-prog-track"><div class="road-prog-fill green" id="rp-check-fill"></div></div>
+          <div class="road-prog-meta" id="rp-check-meta">已打卡 0/60 天 · 连续 0 天</div>
+        </div>
+      </div>
       <ul class="road">
         <li class="cur" id="road-s0"><div class="dot">0</div><div>
           <div class="rt">阶段0 基础启蒙<span class="now" id="s0-badge">当前</span></div>
@@ -363,11 +391,14 @@
     var REVIEW_MIN_PER = 0.75; /* minutes per due card estimate */
     var REVIEW_STOP_MIN = 24;
     var SENT_MIN = 8, SENT_MAX = 10;
+    /* Product defaults (calendar ≠ learning volume): Stage0 soft calendar 84d; check-in habit target 60d. Pedagogy may revise. */
+    var STAGE0_CALENDAR_DAYS = 84;
+    var STAGE0_CHECKIN_TARGET = 60;
     var STATE_KEY = "ket_mvp_state_v4";
     var LOG_KEY = "ket_mvp_log_v4";
     var SWIPE_THRESH = 110;
 
-    var state = { topicId:"school", cards:{}, daily:{}, streak:0, lastActiveDate:null, sentences:[], activeDays:{}, litCelebrated:{}, allLitCelebrated:false };
+    var state = { topicId:"school", cards:{}, daily:{}, streak:0, lastActiveDate:null, sentences:[], activeDays:{}, checkins:{}, litCelebrated:{}, allLitCelebrated:false, planStartedAt:null, stage0PassedAt:null };
     var flow = { step:null, queue:[], i:0, start:0, session:{} };
 
     function pad(n){ return n<10?"0"+n:""+n; }
@@ -560,7 +591,9 @@
           if(!DATA.topics.some(function(t){return t.id===state.topicId;})) state.topicId="school";
           state.cards=s.cards||{}; state.daily=s.daily||{}; state.streak=s.streak||0;
           state.lastActiveDate=s.lastActiveDate||null; state.sentences=s.sentences||[];
-          state.activeDays=s.activeDays||{}; state.litCelebrated=s.litCelebrated||{}; state.allLitCelebrated=!!s.allLitCelebrated; state._litSeeded=!!s._litSeeded;
+          state.activeDays=s.activeDays||{}; state.checkins=s.checkins||{};
+          state.planStartedAt=s.planStartedAt||null; state.stage0PassedAt=s.stage0PassedAt||null;
+          state.litCelebrated=s.litCelebrated||{}; state.allLitCelebrated=!!s.allLitCelebrated; state._litSeeded=!!s._litSeeded;
         }
       }catch(e){}
       ensureDaily();
@@ -822,6 +855,72 @@
         });
       }
     }
+
+    function clampPct(n){ return Math.max(0, Math.min(100, Math.round(n))); }
+    function earliestDate(){
+      var keys=Object.keys(state.checkins||{}).filter(Boolean).sort();
+      if(keys.length) return keys[0];
+      if(state.lastActiveDate) return state.lastActiveDate;
+      return todayStr();
+    }
+    /** Anchor once: earliest check-in, else lastActiveDate, else today. Calendar progress ≠ learning volume. */
+    function ensurePlanStartedAt(){
+      if(state.planStartedAt) return state.planStartedAt;
+      state.planStartedAt=earliestDate();
+      save();
+      return state.planStartedAt;
+    }
+    function ensureStage0PassedAt(s0){
+      if(!s0 || !s0.pass) return state.stage0PassedAt||null;
+      if(state.stage0PassedAt) return state.stage0PassedAt;
+      var start=ensurePlanStartedAt();
+      var soft=addDays(start, STAGE0_CALENDAR_DAYS);
+      /* Prefer soft end if already past; else record today as pass day */
+      state.stage0PassedAt = (daysBetween(soft, todayStr())>=0) ? soft : todayStr();
+      save();
+      return state.stage0PassedAt;
+    }
+    function daysUsedInclusive(from, to){
+      if(!from || !to) return 0;
+      return Math.max(0, daysBetween(from, to)+1);
+    }
+    function renderRoadProgress(){
+      var s0=stage0Passed();
+      var start=ensurePlanStartedAt();
+      var t=todayStr();
+      var timeFill=document.getElementById("rp-time-fill");
+      var timeMeta=document.getElementById("rp-time-meta");
+      var timeLab=document.getElementById("rp-time-label");
+      var s1row=document.getElementById("rp-time-s1");
+      var used0=daysUsedInclusive(start, t);
+      var pct0=clampPct(used0/STAGE0_CALENDAR_DAYS*100);
+      if(s0.pass){
+        var passDay=ensureStage0PassedAt(s0);
+        timeFill.style.width="100%";
+        timeFill.classList.add("green");
+        timeLab.textContent="阶段0已过关";
+        timeMeta.textContent="时间已满 / 已过关（日历预算 "+STAGE0_CALENDAR_DAYS+" 天，自 "+start+"）";
+        s1row.style.display="block";
+        var s1start=passDay || addDays(start, STAGE0_CALENDAR_DAYS);
+        var used1=daysUsedInclusive(s1start, t);
+        var pct1=clampPct(used1/STAGE0_CALENDAR_DAYS*100);
+        document.getElementById("rp-time-s1-fill").style.width=pct1+"%";
+        document.getElementById("rp-time-s1-meta").textContent="已用 "+Math.min(used1,STAGE0_CALENDAR_DAYS)+"/"+STAGE0_CALENDAR_DAYS+" 天（阶段1日历，自 "+s1start+"）";
+      }else{
+        timeFill.classList.remove("green");
+        timeFill.style.width=pct0+"%";
+        timeLab.textContent="阶段0日历";
+        timeMeta.textContent="已用 "+Math.min(used0,STAGE0_CALENDAR_DAYS)+"/"+STAGE0_CALENDAR_DAYS+" 天（阶段0日历）";
+        s1row.style.display="none";
+      }
+      var checked=Object.keys(state.checkins||{}).filter(Boolean).length;
+      var pctC=clampPct(checked/STAGE0_CHECKIN_TARGET*100);
+      var streak=checkinStreak();
+      document.getElementById("rp-check-fill").style.width=pctC+"%";
+      document.getElementById("rp-check-meta").textContent="已打卡 "+checked+"/"+STAGE0_CHECKIN_TARGET+" 天 · 连续 "+streak+" 天";
+      document.getElementById("rp-check-label").textContent= checked>=STAGE0_CHECKIN_TARGET ? "习惯目标已达成" : "习惯目标";
+    }
+
     function refreshHome(){
       ensureDaily();
       var s0=stage0Passed();
@@ -843,7 +942,7 @@
         document.getElementById("s1-badge").style.display="inline";
       }
 
-      renderTopics(); renderCheckin();
+      renderTopics(); renderCheckin(); renderRoadProgress();
       renderLights(); renderLog();
     }
 
