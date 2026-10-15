@@ -2,7 +2,7 @@
   "version": 3,
   "level": "阶段0 Pre-A1/A1 → 阶段1 KET A2",
   "longTermGoal": "IELTS 8",
-  "dailyHardCapMin": 20,
+  "dailyHardCapMin": 40,
   "stage0": {
     "name": "基础启蒙",
     "cefr": "Pre-A1 / A1",
