@@ -50,6 +50,26 @@
     .topic-btn .t{font-weight:700;font-size:14px}
     .topic-btn .e{font-size:11px;color:var(--muted);margin-top:2px}
     .topic-btn.active{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
+    .ck-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;border:2px solid var(--red-soft)}
+    .ck-card.all{border-color:var(--green)}
+    .ck-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .ck-head h2{font-size:17px}
+    .ck-badge{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--red-soft);color:var(--red)}
+    .ck-card.all .ck-badge{background:var(--green-soft);color:var(--green)}
+    .ck-topic{margin:10px 0 6px;font-size:15px;font-weight:700}
+    .ck-topic-note{font-size:12px;color:var(--muted);margin:6px 0 2px}
+    .ck-row{display:flex;align-items:center;gap:10px;padding:10px;margin-top:8px;border-radius:12px;cursor:pointer;background:var(--red-soft);border-left:4px solid var(--red)}
+    .ck-row.doing{background:var(--orange-soft);border-left-color:var(--orange)}
+    .ck-row.done{background:var(--green-soft);border-left-color:var(--green)}
+    .ck-row .rt{font-weight:700;font-size:14px}
+    .ck-row .rs{font-size:12px;color:var(--red);font-weight:700}
+    .ck-row.doing .rs{color:#b54708}.ck-row.done .rs{color:var(--green)}
+    .ck-row .rp{margin-left:auto;font-size:13px;font-weight:700;white-space:nowrap}
+    .week{display:flex;gap:6px;margin-top:12px}
+    .week .d{flex:1;text-align:center;font-size:11px;color:var(--muted);background:var(--bg);border-radius:10px;padding:6px 0}
+    .week .d b{display:block;font-size:14px}
+    .week .d.today{outline:2px solid var(--primary)}
+    .ck-streak{font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
     .check-list{list-style:none}
     .check-list li{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer}
     .check-list li:last-child{border-bottom:none}
@@ -181,14 +201,33 @@
       <div class="hi">你好，初一小勇士 👋 一步一步来，你可以的！</div>
       <h1>英语小步走 🚀</h1>
       <p class="sub">从 KET 起步 · 目标雅思 8 · 每日硬顶 40 分钟</p>
-      <div class="hdr-stats">
-        <div class="s"><div class="n" id="h-sentences">0</div><div class="l">会用的句子数</div></div>
-        <div class="s"><div class="n" id="h-topics">0/3</div><div class="l">主题点亮</div></div>
-        <div class="s"><div class="n" id="h-streak">0</div><div class="l">连续天数</div></div>
-      </div>
     </header>
 
     <div class="banner" id="overdue-banner">⏰ 预计复习超过 24 分钟，请先清复习队列，今日暂停新学。</div>
+
+
+    <section>
+      <div class="ck-card" id="ck-card">
+        <div class="ck-head"><h2>📅 今日打卡</h2><span class="ck-badge" id="ck-badge">0/4 未打卡</span></div>
+        <div class="ck-topic">今天学：<span id="ck-topic-name">学校生活</span>（可切换）</div>
+        <div class="topic-row" id="topic-row"></div>
+        <div class="ck-topic-note">新学词块和词库造句只用这个主题；复习包含所有主题的到期卡。</div>
+        <div id="task-list">
+          <div class="ck-row" data-step="review"><div><div class="rt">1 复习到期卡</div><div class="rs">未开始</div></div><div class="rp"></div></div>
+          <div class="ck-row" data-step="learn"><div><div class="rt">2 新学词块</div><div class="rs">未开始</div></div><div class="rp"></div></div>
+          <div class="ck-row" data-step="practice"><div><div class="rt">3 词库造句</div><div class="rs">未开始</div></div><div class="rp"></div></div>
+          <div class="ck-row" data-step="wrap"><div><div class="rt">4 收工</div><div class="rs">未开始</div></div><div class="rp"></div></div>
+        </div>
+        <div class="week" id="ck-week"></div>
+        <div class="ck-streak" id="ck-streak"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-h"><h2>主题点亮</h2><span class="hint">长期进度</span></div>
+      <div class="lights" id="topic-lights"></div>
+      <div class="ck-topic-note" style="margin-top:8px">会用句子 x/5：完成每日造句后累计，满 5 句点亮。</div>
+    </section>
 
     <section>
       <div class="sec-h"><h2>我的英语路线图</h2><span class="hint">长期目标：雅思 8</span></div>
@@ -208,36 +247,6 @@
         <li class="lock"><div class="dot">🔒</div><div><div class="rt">阶段4 雅思 7+</div><div class="rd">C1</div></div></li>
         <li class="lock"><div class="dot">🏆</div><div><div class="rt">目标 雅思 8</div><div class="rd">慢慢来，梦想会实现！</div></div></li>
       </ul>
-    </section>
-
-    <section>
-      <div class="sec-h"><h2>主题点亮</h2><span class="hint">会用够句子就点亮 ✨</span></div>
-      <div class="lights" id="topic-lights"></div>
-    </section>
-
-    <section>
-      <div class="sec-h"><h2>今日主题</h2><span class="hint">点选后开始学习</span></div>
-      <div class="topic-row" id="topic-row"></div>
-    </section>
-
-    <section>
-      <div class="sec-h"><h2>今日任务</h2><span class="hint" id="task-hint">硬顶 40 分钟</span></div>
-      <ul class="check-list" id="task-list">
-        <li data-step="review"><div class="box">1</div><div style="flex:1"><div class="step-t">复习到期卡</div><div class="step-d">12–16 分钟 · 左滑没记住 / 右滑记住了</div></div><button type="button" class="step-go">开始</button></li>
-        <li data-step="learn"><div class="box">2</div><div style="flex:1"><div class="step-t">新学词块</div><div class="step-d">8–12 个 · 右滑学会了 · 日顶 12</div></div><button type="button" class="step-go">开始</button></li>
-        <li data-step="practice"><div class="box">3</div><div style="flex:1"><div class="step-t">词库造句</div><div class="step-d">8–10 句 · 用句框写短句</div></div><button type="button" class="step-go">开始</button></li>
-        <li data-step="wrap"><div class="box">4</div><div style="flex:1"><div class="step-t">收工 1 分钟</div><div class="step-d">看看今天多会了几句 ⭐</div></div><button type="button" class="step-go">查看</button></li>
-      </ul>
-    </section>
-
-    <section>
-      <div class="sec-h"><h2>学习进度</h2><span class="hint">看句子与点亮，不看分数</span></div>
-      <div class="prog-grid">
-        <div class="prog-box"><div class="n" id="p-sentences">0</div><div class="l">会用的句子</div></div>
-        <div class="prog-box"><div class="n" id="p-lit">0/3</div><div class="l">主题点亮</div></div>
-        <div class="prog-box"><div class="n" id="p-due">0</div><div class="l">今日到期</div></div>
-        <div class="prog-box"><div class="n" id="p-new">0</div><div class="l">今日已新学</div></div>
-      </div>
     </section>
 
     <section>
@@ -544,30 +553,67 @@
         var b=document.createElement("button"); b.type="button";
         b.className="topic-btn"+(t.id===state.topicId?" active":"");
         b.innerHTML='<div class="t">'+t.name+'</div><div class="e">'+s0+' 个词块 · 阶段0</div>';
-        b.onclick=function(){ state.topicId=t.id; save(); renderTopics(); refreshHome(); toast("主题："+t.name); };
+        b.onclick=function(){ state.topicId=t.id; save(); renderTopics(); refreshHome(); toast("今天学："+t.name); };
         row.appendChild(b);
       });
+    }
+    function checkinDone(){ var st=state.daily.steps||{}; return !!(st.review&&st.learn&&st.practice&&st.wrap); }
+    function maybeCheckin(){
+      ensureDaily(); if(!state.checkins) state.checkins={};
+      var t=todayStr();
+      if(checkinDone() && !state.checkins[t]){ state.checkins[t]=true; save(); toast("今日已打卡 ✅"); }
+    }
+    function checkinStreak(){
+      var c=state.checkins||{}, t=todayStr(), n=0, d=c[t]?t:addDays(t,-1);
+      while(c[d]){ n++; d=addDays(d,-1); }
+      return n;
+    }
+    function renderCheckin(){
+      ensureDaily(); var d=state.daily, st=d.steps||{};
+      var topic=DATA.topics.filter(function(t){return t.id===state.topicId;})[0]||DATA.topics[0];
+      document.getElementById("ck-topic-name").textContent=topic.name;
+      var revDone=Object.keys(d.reviewed||{}).length;
+      var revLeft=dueCards().filter(function(c){return !d.reviewed[c.id];}).length;
+      var info={
+        review:{n:revDone, txt:"复习 "+revDone+"/"+(revDone+revLeft)},
+        learn:{n:d.newLearned||0, txt:"新学 "+(d.newLearned||0)+"/"+d.newCap},
+        practice:{n:d.sentToday||0, txt:"造句 "+(d.sentToday||0)+"/"+SENT_MIN},
+        wrap:{n:0, txt:st.wrap?"已收工":"1 分钟"}
+      };
+      var doneN=0;
+      document.querySelectorAll("#task-list .ck-row").forEach(function(r){
+        var k=r.getAttribute("data-step"), done=!!st[k], doing=!done&&info[k].n>0;
+        if(done) doneN++;
+        r.className="ck-row"+(done?" done":(doing?" doing":""));
+        r.querySelector(".rs").textContent=done?"✅已完成":(doing?"进行中":"未开始");
+        r.querySelector(".rp").textContent=info[k].txt;
+      });
+      var all=doneN===4;
+      document.getElementById("ck-card").classList.toggle("all",all);
+      document.getElementById("ck-badge").textContent= all?"今日已打卡 ✅":(doneN+"/4 未打卡");
+      var c=state.checkins||{}, t=todayStr(), wk=document.getElementById("ck-week"), wd="日一二三四五六";
+      wk.innerHTML="";
+      for(var i=6;i>=0;i--){
+        var k=addDays(t,-i), isT=i===0, dt=new Date(k+"T00:00:00");
+        var mark=c[k]?"✅":(isT?"⏳":"❌");
+        var el=document.createElement("div"); el.className="d"+(isT?" today":"");
+        el.innerHTML="<b>"+mark+"</b>"+(isT?"今天":"周"+wd[dt.getDay()]);
+        wk.appendChild(el);
+      }
+      document.getElementById("ck-streak").textContent="连续打卡 "+checkinStreak()+" 天 · 4 项全完成才算打卡，只做一部分不算 · 硬顶 40 分钟";
     }
     function renderLights(){
       var el=document.getElementById("topic-lights"); el.innerHTML="";
       DATA.topics.forEach(function(t){
         var n=sentencesForTopic(t.id), on=n>=5;
         var d=document.createElement("div"); d.className="light"+(on?" on":"");
-        d.innerHTML='<div class="emoji">'+(on?"💡":"🌑")+'</div><div class="tn">'+t.name+'</div><div class="td">'+n+'/5 句'+(on?" · 已点亮":"")+'</div>';
+        d.innerHTML='<div class="emoji">'+(on?"💡":"🌑")+'</div><div class="tn">'+t.name+'</div><div class="td">'+'会用句子 '+Math.min(n,5)+'/5'+(on?" · 已点亮":"")+'</div>';
         el.appendChild(d);
       });
     }
     function refreshHome(){
       ensureDaily();
       var s0=stage0Passed();
-      document.getElementById("h-sentences").textContent = sentencesUsed();
-      document.getElementById("h-topics").textContent = litCount()+"/3";
-      document.getElementById("h-streak").textContent = state.streak||0;
-      document.getElementById("p-sentences").textContent = sentencesUsed();
-      document.getElementById("p-lit").textContent = litCount()+"/3";
-      document.getElementById("p-due").textContent = dueCards().length;
-      document.getElementById("p-new").textContent = state.daily.newLearned||0;
-
       var est=estimatedReviewMin();
       document.getElementById("overdue-banner").classList.toggle("show", newBlocked());
       document.getElementById("overdue-banner").textContent = "⏰ 预计复习约 "+est.toFixed(0)+" 分钟（>"+REVIEW_STOP_MIN+"），请先复习，今日暂停新学。";
@@ -586,14 +632,7 @@
         document.getElementById("s1-badge").style.display="inline";
       }
 
-      var steps=state.daily.steps||{};
-      document.querySelectorAll("#task-list li").forEach(function(li){
-        var s=li.getAttribute("data-step");
-        li.classList.toggle("done", !!steps[s]);
-        li.querySelector(".box").textContent = steps[s] ? "✓" : ({review:"1",learn:"2",practice:"3",wrap:"4"})[s];
-      });
-      var doneN=["review","learn","practice","wrap"].filter(function(k){return steps[k];}).length;
-      document.getElementById("task-hint").textContent = doneN+"/4 · 硬顶 40 分钟";
+      renderCheckin();
       renderLights(); renderLog();
     }
 
@@ -620,7 +659,7 @@
       else if(step==="practice") startPractice();
       else if(step==="wrap") startWrap();
     }
-    function closeFlow(){ if(document.getElementById("flow").classList.contains("show") && flow.start){ ensureDaily(); state.daily.usedMs+=Date.now()-flow.start; flow.start=0; save(); } document.getElementById("flow").classList.remove("show"); document.getElementById("home").style.display="block"; refreshHome(); }
+    function closeFlow(){ if(document.getElementById("flow").classList.contains("show") && flow.start){ ensureDaily(); state.daily.usedMs+=Date.now()-flow.start; flow.start=0; save(); } maybeCheckin(); document.getElementById("flow").classList.remove("show"); document.getElementById("home").style.display="block"; refreshHome(); }
     document.getElementById("flow-back").onclick=closeFlow;
     function setFlowTitle(title,prog){ document.getElementById("flow-title").textContent=title; document.getElementById("flow-prog").textContent=prog||""; }
 
@@ -908,7 +947,7 @@
         if(hits.length){
           fb.className="feedback ok"; fb.textContent="✓ 你会用这句啦！🌟";
           recordSentence(ch, text); flow.session.openOk++;
-          ensureDaily(); state.daily.openDone=true; state.daily.practiceDone=true; state.daily.steps.practice=true;
+          ensureDaily(); state.daily.openDone=true;
           markActive(); save(); addLog("open_produce",1,60,{note:ch.lemma+" 造句"});
           document.getElementById("open-done").style.display="block";
         } else { fb.className="feedback bad"; fb.textContent="好像还没用到（"+hints+"），改一下再自检～"; }
@@ -918,6 +957,7 @@
       doneBtn.textContent = nextN>=SENT_MAX ? "完成造句 🎉" : (nextN>=SENT_MIN ? "下一句（已够 "+SENT_MIN+" 句，也可以收工）" : "下一句（"+nextN+"/"+SENT_MIN+"）");
       doneBtn.onclick=function(){
         flow.session.sentDone=nextN; flow.i++;
+        ensureDaily(); state.daily.sentToday=(state.daily.sentToday||0)+1; save();
         if(nextN>=SENT_MAX || flow.i>=flow.queue.length){ finishPractice(); return; }
         renderOpenProduce(flow.queue[flow.i]);
         if(nextN>=SENT_MIN){
@@ -928,6 +968,7 @@
       };
     }
     function finishPractice(){
+      ensureDaily(); if((state.daily.sentToday||0)>=SENT_MIN || flow.i>=flow.queue.length){ state.daily.steps.practice=true; state.daily.practiceDone=true; } save();
       addLog("practice",flow.session.sentDone||0,Math.round((Date.now()-flow.start)/1000),{note:"词库造句 "+(flow.session.sentDone||0)+" 句"}); closeFlow();
     }
 
@@ -940,18 +981,16 @@
         '<div class="card-block"><div class="big-ok"><div class="emoji">🏁</div><h4>今日收工</h4><p style="color:var(--muted);font-size:13px">今天又多会了几句！离 KET 更近啦 💪</p></div>'+
         '<div class="summary-row"><span>会用的句子</span><strong>'+sentencesUsed()+'</strong></div>'+
         '<div class="summary-row"><span>主题点亮</span><strong>'+litCount()+'/3</strong></div>'+
-        '<div class="summary-row"><span>连续天数</span><strong>'+state.streak+'</strong></div>'+
+        '<div class="summary-row"><span>今日打卡</span><strong>'+(checkinDone()?"已打卡 ✅":"还差几项")+'</strong></div>'+
         '<div class="summary-row"><span>复习</span><strong>'+(steps.review?"已完成":"未做")+'</strong></div>'+
         '<div class="summary-row"><span>新学</span><strong>'+(state.daily.newLearned||0)+' 个</strong></div>'+
-        '<div class="summary-row"><span>造句</span><strong>'+(steps.practice?"已完成":"未做")+'</strong></div>'+
+        '<div class="summary-row"><span>造句</span><strong>'+(state.daily.sentToday||0)+' 句</strong></div>'+
         '<button type="button" class="btn btn-primary btn-full" style="margin-top:14px" id="wp-done">回首页</button></div>';
       document.getElementById("wp-done").onclick=closeFlow;
     }
 
-    document.querySelectorAll("#task-list li").forEach(function(li){
-      function go(e){ e.preventDefault(); openFlow(li.getAttribute("data-step")); }
-      li.addEventListener("click",go);
-      li.querySelector(".step-go").addEventListener("click",function(e){ e.stopPropagation(); go(e); });
+    document.querySelectorAll("#task-list .ck-row").forEach(function(li){
+      li.addEventListener("click",function(e){ e.preventDefault(); openFlow(li.getAttribute("data-step")); });
     });
     document.getElementById("btn-clear-log").onclick=function(){ try{localStorage.setItem(LOG_KEY,"[]");}catch(e){} renderLog(); toast("记录已清空"); };
 
@@ -990,7 +1029,7 @@
       }
       return Promise.resolve(sha256Fallback(str));
     }
-    if(/[?&]test=1/.test(location.search)) window.__ket={state:function(){return state;},save:save,load:load,ensureDaily:ensureDaily,dueCards:dueCards,availableNew:availableNew,flow:function(){return flow;},refreshHome:function(){refreshHome();},openFlow:openFlow,closeFlow:closeFlow,todayStr:todayStr,addDays:addDays,C:{REQUEUE_GAP:REQUEUE_GAP,REQUEUE_MAX_PER_DAY:REQUEUE_MAX_PER_DAY,NEW_CAP_REDUCED:NEW_CAP_REDUCED}};
+    if(/[?&]test=1/.test(location.search)) window.__ket={state:function(){return state;},save:save,load:load,ensureDaily:ensureDaily,dueCards:dueCards,availableNew:availableNew,flow:function(){return flow;},refreshHome:function(){refreshHome();},checkinStreak:checkinStreak,openFlow:openFlow,closeFlow:closeFlow,todayStr:todayStr,addDays:addDays,C:{REQUEUE_GAP:REQUEUE_GAP,REQUEUE_MAX_PER_DAY:REQUEUE_MAX_PER_DAY,NEW_CAP_REDUCED:NEW_CAP_REDUCED}};
     var booted=false;
     function enterApp(){
       document.body.classList.remove("locked");
