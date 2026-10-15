@@ -230,7 +230,7 @@
       <div class="emo">🦉</div>
       <h2>英语小步走</h2>
       <p>从 KET 起步 · 目标雅思 8</p>
-      <div class="auth-cloud-badge off" id="cloud-badge">本地模式</div>
+      <div class="auth-cloud-badge off" id="cloud-badge">检测中…</div>
       <div class="auth-tabs" role="tablist">
         <button type="button" class="on" data-tab="guest" id="tab-guest">游客继续</button>
         <button type="button" data-tab="login" id="tab-login">邮箱登录</button>
@@ -275,7 +275,7 @@
           <div class="login-ok" id="cr-ok"></div>
           <button type="submit" class="btn btn-primary btn-full" id="btn-cloud-reg">注册账号</button>
         </form>
-        <p class="auth-hint">先点「发送验证码」到邮箱，再填码注册。密码≥8 位且含字母和数字。可用任意邮箱注册多个账号；若连不上云端，请先用「游客继续」。</p>
+        <p class="auth-hint" id="cloud-reg-hint">先点「发送验证码」到邮箱，再填码注册。密码≥8 位且含字母和数字。可用任意邮箱注册多个账号；若连不上云端，请先用「游客继续」。</p>
       </div>
       <div class="sync-dot" id="sync-status"></div>
     </div>
@@ -398,6 +398,10 @@
     /* Display-only plan window / expected check-ins — NOT stage0 pass criteria.
        Pass remains ability-based (retention + sentences + short streak); early unlock OK.
        Pedagogy: show「计划约 84 天」「目标打卡 60」; never imply calendar gates completion. */
+    var TENCENT_HOSTING_URL = "https://english-little-steps-d0a2b84764b-1408940790.tcloudbaseapp.com/";
+    function isPagesMirror(){
+      try{ return /github\.io$/i.test(location.hostname); }catch(e){ return false; }
+    }
     var STAGE0_CALENDAR_DAYS = 84;
     var STAGE0_CHECKIN_TARGET = 60;
     var STATE_KEY = "ket_mvp_state_v4";
@@ -1446,7 +1450,9 @@
       if(/weak-password|password_too_weak|至少 8/i.test(m) || /password_too_weak|weak-password/i.test(code)) return "密码至少 8 位，且需包含字母和数字";
       if(/invalid-email|invalid_email|invalid_argument/i.test(m) && /邮箱|email/i.test(m)) return "邮箱格式不对";
       if(/invalid_email/i.test(code)) return "邮箱格式不对";
-      if(/云端未配置/.test(m)) return "还没配置 CloudBase：请设置 cloudbase-config.js 的 envId 与 accessKey";
+      if(/云端未配置/.test(m)) return isPagesMirror()
+        ? ("请到腾讯云版登录："+TENCENT_HOSTING_URL)
+        : "云端暂不可用，请稍后再试或先用「游客继续」。";
       if(/resource_exhausted|RATE_LIMITED|too_many|频繁/i.test(m) || /resource_exhausted/i.test(code)) return "尝试太频繁，请稍后再试；也可先用「游客继续」。";
       return m;
     }
@@ -1552,12 +1558,37 @@
     function updateCloudBadge(on){
       var b=document.getElementById("cloud-badge");
       if(!b) return;
+      var loginHint=document.getElementById("cloud-login-hint");
+      var regHint=document.getElementById("cloud-reg-hint");
+      if(isPagesMirror()){
+        b.textContent="GitHub Pages 镜像";
+        b.classList.add("off");
+        var linkHtml='登录与云同步请打开腾讯云版：<a href="'+TENCENT_HOSTING_URL+'" target="_blank" rel="noopener">english-little-steps（腾讯云）</a>。本站可游客学，进度只在本机。';
+        if(loginHint) loginHint.innerHTML=linkHtml;
+        if(regHint) regHint.innerHTML=linkHtml;
+        return;
+      }
       if(on){ b.textContent="云端已就绪"; b.classList.remove("off"); }
-      else { b.textContent="本地模式（未配置 CloudBase）"; b.classList.add("off"); }
-      var hint=document.getElementById("cloud-login-hint");
-      if(hint) hint.textContent = on
-        ? "用邮箱登录后进度可同步到国内云端。若当前域名未加白名单，请用 CloudBase 托管域名打开，或先用「游客继续」。"
-        : "云端暂未就绪，请先点「游客继续」——进度保存在本机，配置 CloudBase 后可再注册并导入。";
+      else { b.textContent="本地模式（云端未就绪）"; b.classList.add("off"); }
+      if(loginHint) loginHint.textContent = on
+        ? "用邮箱登录后进度可同步到国内云端。也可先用「游客继续」。"
+        : "云端暂未就绪，请先点「游客继续」——进度保存在本机。正式登录请确认打开的是腾讯云托管域名。";
+      if(regHint) regHint.textContent = on
+        ? "先点「发送验证码」到邮箱，再填码注册。密码≥8 位且含字母和数字。"
+        : "本页云端未就绪时请先游客学习；要注册请打开腾讯云托管域名。";
+    }
+
+    function applyPagesMirrorGate(){
+      if(!isPagesMirror()) return;
+      updateCloudBadge(false);
+      var mirrorNote='本站是 GitHub Pages 镜像，不能在此登录云端。请打开 <a href="'+TENCENT_HOSTING_URL+'" target="_blank" rel="noopener">腾讯云版</a> 注册/登录；或点「游客继续」本机学习。';
+      ["cloud-login-form","cloud-reg-form"].forEach(function(id){
+        var f=document.getElementById(id);
+        if(!f) return;
+        f.querySelectorAll("input,button").forEach(function(el){ el.disabled=true; });
+      });
+      var clErr=document.getElementById("cl-err"); if(clErr){ clErr.innerHTML=mirrorNote; }
+      var crErr=document.getElementById("cr-err"); if(crErr){ crErr.innerHTML=mirrorNote; }
     }
 
     function bootAuth(){
@@ -1569,6 +1600,15 @@
         enterApp(); setSyncStatus("游客 · 仅本机"); return;
       }
       if(remembered===USER_HASH){ if(window.KetCloud) KetCloud.mode="guest"; enterApp(); return; }
+
+      /* tencent_only: GitHub Pages is mirror — no CloudBase login here */
+      if(isPagesMirror()){
+        applyPagesMirrorGate();
+        showLogin();
+        setAuthTab("guest");
+        setSyncStatus("Pages 镜像 · 登录请用腾讯云版");
+        return;
+      }
 
       var startCloud = window.KetCloud
         ? KetCloud.bootstrap().then(function(on){
