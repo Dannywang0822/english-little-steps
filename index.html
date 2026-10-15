@@ -314,19 +314,19 @@
       <div class="sec-h"><h2>我的英语路线图</h2><span class="hint">长期目标：雅思 8</span></div>
       <div class="road-prog" id="road-prog" aria-label="路线图进度">
         <div class="road-prog-row" id="rp-time-s0">
-          <div class="road-prog-lab"><span>⏱ 时间进度</span><span class="sub" id="rp-time-label">阶段0日历</span></div>
+          <div class="road-prog-lab"><span>⏱ 时间进度</span><span class="sub" id="rp-time-label">计划约 84 天</span></div>
           <div class="road-prog-track"><div class="road-prog-fill" id="rp-time-fill"></div></div>
-          <div class="road-prog-meta" id="rp-time-meta">已用 0/84 天（阶段0日历）</div>
+          <div class="road-prog-meta" id="rp-time-meta">已过 0 天 · 计划约 84 天（仅展示，过关看能力）</div>
         </div>
         <div class="road-prog-row" id="rp-time-s1" style="display:none">
-          <div class="road-prog-lab"><span>⏱ 阶段1时间</span><span class="sub">日历进度</span></div>
+          <div class="road-prog-lab"><span>⏱ 阶段1时间</span><span class="sub">计划约 84 天</span></div>
           <div class="road-prog-track"><div class="road-prog-fill orange" id="rp-time-s1-fill"></div></div>
-          <div class="road-prog-meta" id="rp-time-s1-meta">已用 0/84 天（阶段1日历）</div>
+          <div class="road-prog-meta" id="rp-time-s1-meta">已过 0 天 · 计划约 84 天（仅展示）</div>
         </div>
         <div class="road-prog-row" id="rp-check">
-          <div class="road-prog-lab"><span>✅ 已打卡进度</span><span class="sub" id="rp-check-label">习惯目标</span></div>
+          <div class="road-prog-lab"><span>✅ 已打卡进度</span><span class="sub" id="rp-check-label">目标打卡 60</span></div>
           <div class="road-prog-track"><div class="road-prog-fill green" id="rp-check-fill"></div></div>
-          <div class="road-prog-meta" id="rp-check-meta">已打卡 0/60 天 · 连续 0 天</div>
+          <div class="road-prog-meta" id="rp-check-meta">已打卡 0 天 · 目标打卡 60 · 连续 0 天（非过关条件）</div>
         </div>
       </div>
       <ul class="road">
@@ -391,7 +391,9 @@
     var REVIEW_MIN_PER = 0.75; /* minutes per due card estimate */
     var REVIEW_STOP_MIN = 24;
     var SENT_MIN = 8, SENT_MAX = 10;
-    /* Product defaults (calendar ≠ learning volume): Stage0 soft calendar 84d; check-in habit target 60d. Pedagogy may revise. */
+    /* Display-only plan window / expected check-ins — NOT stage0 pass criteria.
+       Pass remains ability-based (retention + sentences + short streak); early unlock OK.
+       Pedagogy: show「计划约 84 天」「目标打卡 60」; never imply calendar gates completion. */
     var STAGE0_CALENDAR_DAYS = 84;
     var STAGE0_CHECKIN_TARGET = 60;
     var STATE_KEY = "ket_mvp_state_v4";
@@ -896,29 +898,30 @@
       var pct0=clampPct(used0/STAGE0_CALENDAR_DAYS*100);
       if(s0.pass){
         var passDay=ensureStage0PassedAt(s0);
-        timeFill.style.width="100%";
-        timeFill.classList.add("green");
-        timeLab.textContent="阶段0已过关";
-        timeMeta.textContent="时间已满 / 已过关（日历预算 "+STAGE0_CALENDAR_DAYS+" 天，自 "+start+"）";
+        /* Ability pass may happen before day 84 — bar shows plan progress, not a gate. */
+        timeFill.style.width=pct0+"%";
+        if(pct0>=100) timeFill.classList.add("green"); else timeFill.classList.remove("green");
+        timeLab.textContent="阶段0已能力过关";
+        timeMeta.textContent="已过 "+used0+" 天 · 计划约 "+STAGE0_CALENDAR_DAYS+" 天（仅展示；已按能力过关，不必等满日历）";
         s1row.style.display="block";
         var s1start=passDay || addDays(start, STAGE0_CALENDAR_DAYS);
         var used1=daysUsedInclusive(s1start, t);
         var pct1=clampPct(used1/STAGE0_CALENDAR_DAYS*100);
         document.getElementById("rp-time-s1-fill").style.width=pct1+"%";
-        document.getElementById("rp-time-s1-meta").textContent="已用 "+Math.min(used1,STAGE0_CALENDAR_DAYS)+"/"+STAGE0_CALENDAR_DAYS+" 天（阶段1日历，自 "+s1start+"）";
+        document.getElementById("rp-time-s1-meta").textContent="已过 "+used1+" 天 · 计划约 "+STAGE0_CALENDAR_DAYS+" 天（仅展示，自 "+s1start+"）";
       }else{
         timeFill.classList.remove("green");
         timeFill.style.width=pct0+"%";
-        timeLab.textContent="阶段0日历";
-        timeMeta.textContent="已用 "+Math.min(used0,STAGE0_CALENDAR_DAYS)+"/"+STAGE0_CALENDAR_DAYS+" 天（阶段0日历）";
+        timeLab.textContent="计划约 "+STAGE0_CALENDAR_DAYS+" 天";
+        timeMeta.textContent="已过 "+used0+" 天 · 计划约 "+STAGE0_CALENDAR_DAYS+" 天（仅展示，过关看能力）";
         s1row.style.display="none";
       }
       var checked=Object.keys(state.checkins||{}).filter(Boolean).length;
       var pctC=clampPct(checked/STAGE0_CHECKIN_TARGET*100);
       var streak=checkinStreak();
       document.getElementById("rp-check-fill").style.width=pctC+"%";
-      document.getElementById("rp-check-meta").textContent="已打卡 "+checked+"/"+STAGE0_CHECKIN_TARGET+" 天 · 连续 "+streak+" 天";
-      document.getElementById("rp-check-label").textContent= checked>=STAGE0_CHECKIN_TARGET ? "习惯目标已达成" : "习惯目标";
+      document.getElementById("rp-check-meta").textContent="已打卡 "+checked+" 天 · 目标打卡 "+STAGE0_CHECKIN_TARGET+" · 连续 "+streak+" 天（非过关条件）";
+      document.getElementById("rp-check-label").textContent= checked>=STAGE0_CHECKIN_TARGET ? "目标打卡 60 已达到" : "目标打卡 60";
     }
 
     function refreshHome(){
