@@ -150,10 +150,32 @@
     .tts-bar button{border:1.5px solid var(--border);background:#fff;border-radius:999px;padding:4px 12px;font-size:12px;font-family:inherit;cursor:pointer;color:var(--text)}
     .tts-bar button.on{background:var(--primary);color:#fff;border-color:var(--primary)}
     .tts-note{font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px}
+    .login{position:fixed;inset:0;z-index:200;background:linear-gradient(160deg,#4f6ef7,#7b93ff 55%,#c7d2fe);display:flex;align-items:center;justify-content:center;padding:20px}
+    .login-card{background:#fff;border-radius:22px;padding:28px 22px;width:100%;max-width:360px;box-shadow:0 12px 40px rgba(26,34,51,.18);text-align:center}
+    .login-card .emo{font-size:48px}
+    .login-card h2{font-size:22px;margin:6px 0 4px}
+    .login-card p{font-size:13px;color:var(--muted);margin-bottom:18px}
+    .login-card input[type=text],.login-card input[type=password]{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:16px;font-family:inherit;margin-bottom:10px;outline:none}
+    .login-card input:focus{border-color:var(--primary)}
+    .login-card label.rem{display:flex;align-items:center;gap:6px;font-size:13px;color:#445;margin:4px 0 14px;justify-content:flex-start}
+    .login-err{color:var(--red);font-size:13px;min-height:18px;margin-bottom:6px}
+    body.locked #home{display:none}
     footer{text-align:center;padding:18px;font-size:11px;color:#b0b8c8}
   </style>
 </head>
-<body>
+<body class="locked">
+  <div class="login" id="login">
+    <form class="login-card" id="login-form" autocomplete="on">
+      <div class="emo">🦉</div>
+      <h2>欢迎回来，小勇士！</h2>
+      <p>登录后开始今天的英语小步走 🚀</p>
+      <input type="text" id="lg-user" placeholder="用户名" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" />
+      <input type="password" id="lg-pass" placeholder="密码" autocomplete="current-password" />
+      <label class="rem"><input type="checkbox" id="lg-rem" checked /> 记住我</label>
+      <div class="login-err" id="lg-err"></div>
+      <button type="submit" class="btn btn-primary btn-full">开始学习 ✨</button>
+    </form>
+  </div>
   <div class="wrap" id="home">
     <header class="top">
       <div class="hi">你好，初一小勇士 👋 一步一步来，你可以的！</div>
@@ -223,6 +245,7 @@
       <ul class="log-list" id="log-list"></ul>
       <div class="empty" id="log-empty">还没有记录，完成一步就会出现～</div>
     </section>
+    <div style="text-align:center;margin-top:14px"><button type="button" class="btn btn-ghost" id="btn-logout" style="font-size:13px;padding:8px 16px">退出登录</button></div>
     <footer>本地原型 · 数据只存本机 · 从 KET 起步，目标雅思 8</footer>
   </div>
 
@@ -824,7 +847,74 @@
     });
     document.getElementById("btn-clear-log").onclick=function(){ try{localStorage.setItem(LOG_KEY,"[]");}catch(e){} renderLog(); toast("记录已清空"); };
 
-    load(); renderTopics(); refreshHome();
+    /* ===== Lightweight front-end login gate (NOT real security) ===== */
+    var AUTH_KEY="ket_auth_v1";
+    var USER_HASH="662c67141c20e7f8730607d8a22aab33088f766c28101b554f1a177e22d45dc7";
+    var PASS_HASH="a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
+    function sha256Fallback(str){
+      function rr(n,x){return (x>>>n)|(x<<(32-n));}
+      var K=[],H=[],i,j,pr=0,c=2;
+      function isP(n){for(var f=2;f*f<=n;f++) if(n%f===0) return false; return true;}
+      while(pr<64){ if(isP(c)){ if(pr<8) H[pr]=(Math.pow(c,1/2)*4294967296)|0; K[pr]=(Math.pow(c,1/3)*4294967296)|0; pr++; } c++; }
+      var bytes=unescape(encodeURIComponent(str)), l=bytes.length, words=[];
+      for(i=0;i<l;i++) words[i>>2]|=(bytes.charCodeAt(i)&255)<<(24-(i%4)*8);
+      words[l>>2]|=0x80<<(24-(l%4)*8);
+      words[((l+8>>6)<<4)+15]=l*8;
+      for(i=0;i<words.length;i+=16){
+        var w=[],a=H[0],b=H[1],cc=H[2],d=H[3],e=H[4],f=H[5],g=H[6],hh=H[7];
+        for(j=0;j<64;j++){
+          if(j<16) w[j]=words[i+j]|0;
+          else { var s0=rr(7,w[j-15])^rr(18,w[j-15])^(w[j-15]>>>3), s1=rr(17,w[j-2])^rr(19,w[j-2])^(w[j-2]>>>10); w[j]=(w[j-16]+s0+w[j-7]+s1)|0; }
+          var t1=(hh+(rr(6,e)^rr(11,e)^rr(25,e))+((e&f)^(~e&g))+K[j]+w[j])|0;
+          var t2=((rr(2,a)^rr(13,a)^rr(22,a))+((a&b)^(a&cc)^(b&cc)))|0;
+          hh=g; g=f; f=e; e=(d+t1)|0; d=cc; cc=b; b=a; a=(t1+t2)|0;
+        }
+        H[0]=(H[0]+a)|0;H[1]=(H[1]+b)|0;H[2]=(H[2]+cc)|0;H[3]=(H[3]+d)|0;H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+hh)|0;
+      }
+      var out=""; for(i=0;i<8;i++) out+=("00000000"+(H[i]>>>0).toString(16)).slice(-8);
+      return out;
+    }
+    function sha256(str){
+      if(window.crypto && crypto.subtle && window.TextEncoder){
+        return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)).then(function(buf){
+          return Array.prototype.map.call(new Uint8Array(buf), function(x){ return ("0"+x.toString(16)).slice(-2); }).join("");
+        }).catch(function(){ return sha256Fallback(str); });
+      }
+      return Promise.resolve(sha256Fallback(str));
+    }
+    var booted=false;
+    function enterApp(){
+      document.body.classList.remove("locked");
+      document.getElementById("login").style.display="none";
+      if(!booted){ booted=true; load(); renderTopics(); refreshHome(); } else refreshHome();
+    }
+    function showLogin(){
+      document.body.classList.add("locked");
+      document.getElementById("login").style.display="flex";
+      document.getElementById("lg-pass").value="";
+      document.getElementById("lg-err").textContent="";
+    }
+    document.getElementById("login-form").addEventListener("submit", function(e){
+      e.preventDefault();
+      var u=document.getElementById("lg-user").value, pw=document.getElementById("lg-pass").value;
+      var rem=document.getElementById("lg-rem").checked;
+      Promise.all([sha256(u), sha256(pw)]).then(function(r){
+        if(r[0]===USER_HASH && r[1]===PASS_HASH){
+          try{ if(rem) localStorage.setItem(AUTH_KEY, USER_HASH); else localStorage.removeItem(AUTH_KEY); }catch(err){}
+          try{ sessionStorage.setItem(AUTH_KEY, USER_HASH); }catch(err){}
+          enterApp(); toast("登录成功，开始加油吧！💪");
+        } else {
+          document.getElementById("lg-err").textContent="用户名或密码不对，再试一次～";
+        }
+      });
+    });
+    document.getElementById("btn-logout").onclick=function(){
+      try{ localStorage.removeItem(AUTH_KEY); sessionStorage.removeItem(AUTH_KEY); }catch(e){}
+      showLogin(); toast("已退出登录");
+    };
+    var remembered=null;
+    try{ remembered=localStorage.getItem(AUTH_KEY)||sessionStorage.getItem(AUTH_KEY); }catch(e){}
+    if(remembered===USER_HASH) enterApp(); else showLogin();
   })();
   </script>
 </body>
