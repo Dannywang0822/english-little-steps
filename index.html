@@ -265,8 +265,20 @@
     "use strict";
     var DATA = window.__TOPICS__;
     var INTERVALS = [1,3,7,14,30,60];
-    var NEW_CAP = 12;
+    var NEW_CAP = 12;               /* normal daily new-card cap */
+    var NEW_CAP_REDUCED = 8;        /* next-day cap when too many new cards were left-swiped */
+    var NEW_FAIL_RATIO = 0.5;       /* >50% of the day's new cards left-swiped -> reduce tomorrow */
     var NEW_BATCH = 12;
+    /* ===== Expert SRS / requeue parameters ===== */
+    var REQUEUE_GAP = 4;            /* missed card reappears after exactly 4 other cards */
+    var REQUEUE_MAX_PER_DAY = 3;    /* max reappearances of the same card per day */
+    var STUBBORN_ERRORS = 3;        /* cross-day errors before a card becomes 顽固词 */
+    var STUBBORN_INTERVALS = [1,2,4,7,14]; /* 顽固词 ladder, then merge back at 14 days */
+    var MERGE_INTERVAL_IDX = 3;     /* INTERVALS[3] === 14 */
+    var MASTER_STREAK = 3;          /* consecutive cross-day right swipes */
+    var MASTER_MIN_INTERVAL = 14;   /* current interval must be >= 14 days */
+    var DAILY_CAP_MIN = 40;         /* daily hard cap (minutes) */
+    var CAP_GUARD_MIN = 1;          /* within 1 min of cap -> roll requeued cards to tomorrow */
     var REVIEW_MIN_PER = 0.75; /* minutes per due card estimate */
     var REVIEW_STOP_MIN = 24;
     var SENT_MIN = 8, SENT_MAX = 10;
@@ -375,13 +387,27 @@
     }
 
     function ensureCard(id){
-      if(!state.cards[id]) state.cards[id]={id:id,intervalIdx:-1,due:null,seen:false,reviews:0,remembers:0,lastResult:null,openOk:false,lastReviewDate:null};
+      if(!state.cards[id]) state.cards[id]={id:id,intervalIdx:-1,due:null,seen:false,reviews:0,remembers:0,lastResult:null,openOk:false,lastReviewDate:null,errors:0,stubborn:false,stubIdx:0,consecRight:0,mastered:false,priority:false,relearn:null};
       return state.cards[id];
     }
     function ensureDaily(){
       var t=todayStr();
-      if(!state.daily||state.daily.date!==t) state.daily={date:t,newLearned:0,awlLearned:0,reviewDone:0,practiceDone:false,openDone:false,wrapDone:false,steps:{review:false,learn:false,practice:false,wrap:false}};
+      if(!state.daily||state.daily.date!==t){
+        var prev=state.daily||{};
+        var seenN=Object.keys(prev.newSeen||{}).length, leftN=Object.keys(prev.newLeftAny||{}).length;
+        var reduced = seenN>0 && (leftN/seenN) > NEW_FAIL_RATIO;
+        state.daily={date:t,newLearned:0,awlLearned:0,reviewDone:0,practiceDone:false,openDone:false,wrapDone:false,
+          steps:{review:false,learn:false,practice:false,wrap:false},
+          newCap: reduced?NEW_CAP_REDUCED:NEW_CAP, usedMs:0,
+          reappear:{}, reviewed:{}, found:{}, newSeen:{}, newLeftAny:{}, newCounted:{}, stubbornDone:{}};
+      }
+      var d=state.daily;
+      ["reappear","reviewed","found","newSeen","newLeftAny","newCounted","stubbornDone"].forEach(function(k){ if(!d[k]) d[k]={}; });
+      if(!d.newCap) d.newCap=NEW_CAP;
+      if(!d.usedMs) d.usedMs=0;
     }
+    function usedMinutes(){ ensureDaily(); var live = flow.start && document.getElementById("flow").classList.contains("show") ? (Date.now()-flow.start) : 0; return (state.daily.usedMs+live)/60000; }
+    function nearCap(){ return usedMinutes() >= DAILY_CAP_MIN - CAP_GUARD_MIN; }
 
     function load(){
       try{
@@ -417,13 +443,16 @@
     }
 
     function dueCards(){
-      var t=todayStr(), list=[];
+      var t=todayStr(), list=[], extra=[];
+      ensureDaily();
       Object.keys(state.cards).forEach(function(id){
         var c=state.cards[id];
-        if(c.seen && c.due && c.due<=t) list.push(c);
+        if(!c.seen) return;
+        if(c.due && c.due<=t) list.push(c);
+        else if(c.stubborn && !state.daily.stubbornDone[id]) extra.push(c); /* 顽固词: once a day, separately */
       });
-      list.sort(function(a,b){ return a.due<b.due?-1:1; });
-      return list;
+      list.sort(function(a,b){ if(!!b.priority!==!!a.priority) return b.priority?1:-1; return a.due<b.due?-1:1; });
+      return list.concat(extra);
     }
     function estimatedReviewMin(){ return dueCards().length * REVIEW_MIN_PER; }
     function newBlocked(){ return estimatedReviewMin() > REVIEW_STOP_MIN; }
@@ -480,13 +509,18 @@
       return {rec:rec, sentsOk:sentsOk, daysOk:daysOk, pass: rec!==null && rec>=85 && sentsOk && daysOk};
     }
 
+    function relearnCards(){
+      var t=todayStr();
+      return allChunks().filter(function(ch){ var c=state.cards[ch.id]; return c && !c.seen && c.relearn && c.relearn<=t; });
+    }
     function availableNew(){
       if(newBlocked()) return [];
       ensureDaily();
-      var left = NEW_CAP - (state.daily.newLearned||0);
-      if(left<=0) return [];
+      var relearn = relearnCards().map(function(ch){ ch._relearn=true; return ch; }); /* do NOT use quota */
+      var left = state.daily.newCap - (state.daily.newLearned||0);
+      if(left<=0) return relearn;
       var chunks = topicChunks(state.topicId, 0);
-      var unseen = chunks.filter(function(ch){ var c=state.cards[ch.id]; return !c||!c.seen; });
+      var tdy=todayStr(); var unseen = chunks.filter(function(ch){ var c=state.cards[ch.id]; return !c||(!c.seen && !c.relearn); });
       var normal = unseen.filter(function(ch){ return !ch.awl; });
       var awls = unseen.filter(function(ch){ return !!ch.awl; });
       var out = normal.slice();
@@ -500,7 +534,7 @@
       } else if(allowAwl && awls.length && pick.length === 0){
         pick.push(awls[0]);
       }
-      return pick;
+      return relearn.concat(pick);
     }
 
     function renderTopics(){
@@ -586,7 +620,7 @@
       else if(step==="practice") startPractice();
       else if(step==="wrap") startWrap();
     }
-    function closeFlow(){ document.getElementById("flow").classList.remove("show"); document.getElementById("home").style.display="block"; refreshHome(); }
+    function closeFlow(){ if(document.getElementById("flow").classList.contains("show") && flow.start){ ensureDaily(); state.daily.usedMs+=Date.now()-flow.start; flow.start=0; save(); } document.getElementById("flow").classList.remove("show"); document.getElementById("home").style.display="block"; refreshHome(); }
     document.getElementById("flow-back").onclick=closeFlow;
     function setFlowTitle(title,prog){ document.getElementById("flow-title").textContent=title; document.getElementById("flow-prog").textContent=prog||""; }
 
@@ -654,9 +688,20 @@
       return html;
     }
 
+    /* ===== Requeue helper: exactly REQUEUE_GAP other cards later, else at end ===== */
+    function requeue(item){
+      var pos = flow.i + 1 + REQUEUE_GAP;      /* flow.i is the card just answered */
+      if(pos >= flow.queue.length) flow.queue.push(item); else flow.queue.splice(pos, 0, item);
+    }
+    function progText(){
+      var left=flow.queue.length-flow.i;
+      return "剩 "+left+" 张"+(flow.session.requeued?(" · 回炉 "+flow.session.requeued):"");
+    }
+
     /* Review */
     function startReview(){
       flow.queue = dueCards();
+      flow.session.requeued=0; flow.session.found=0; flow.session.rolled=0;
       if(!flow.queue.length){
         ensureDaily(); state.daily.steps.review=true; save();
         setFlowTitle("复习到期卡","0 张");
@@ -668,10 +713,13 @@
     }
     function renderReviewSwipe(){
       var card=flow.queue[flow.i], ch=chunkById(card.id);
-      setFlowTitle("复习到期卡",(flow.i+1)+" / "+flow.queue.length);
+      var rep=state.daily.reappear[card.id]||0;
+      setFlowTitle("复习到期卡", progText());
+      var tag = rep ? '<div class="swipe-hint" style="color:#b54708">🔁 回炉第 '+rep+'/'+REQUEUE_MAX_PER_DAY+' 次 · 找回就好，不会加长间隔</div>'
+        : (card.stubborn ? '<div class="swipe-hint" style="color:#b54708">🧱 顽固词 · 每天单独复习一次</div>' : (card.priority?'<div class="swipe-hint" style="color:#b54708">⭐ 明日优先</div>':''));
       var body=document.getElementById("flow-body");
       body.innerHTML=
-        '<div class="swipe-hint">👈 <b class="left">左滑 = 没记住</b>　<b class="right">右滑 = 记住了</b> 👉</div>'+
+        '<div class="swipe-hint">👈 <b class="left">左滑 = 没记住</b>　<b class="right">右滑 = 记住了</b> 👉</div>'+tag+
         ttsBarHTML()+'<div class="deck"><div class="deck-card" id="swipe-card">'+cardFaceHTML(ch, flow.revealed?"revealed":"review")+'</div></div>'+
         '<div class="swipe-btns">'+
         '<button type="button" class="no-btn" id="btn-no" title="没记住">←</button>'+
@@ -682,25 +730,67 @@
       document.getElementById("btn-yes").onclick=function(){ ctl.forceRight(); };
       document.getElementById("btn-peek").onclick=function(){ flow.revealed=true; renderReviewSwipe(); };
     }
-    function answerReview(remember){
-      var card=flow.queue[flow.i], t=todayStr();
-      card.reviews=(card.reviews||0)+1; card.lastReviewDate=t; card.lastResult=remember?"remember":"forgot";
-      if(remember){
-        card.remembers=(card.remembers||0)+1;
+    function curInterval(card){ return card.stubborn ? STUBBORN_INTERVALS[card.stubIdx] : (card.intervalIdx<0?0:INTERVALS[card.intervalIdx]); }
+    function crossDayRight(card, t){
+      card.remembers=(card.remembers||0)+1; card.consecRight=(card.consecRight||0)+1;
+      if(card.stubborn){
+        card.stubIdx++;
+        if(card.stubIdx >= STUBBORN_INTERVALS.length-1){ card.stubborn=false; card.stubIdx=0; card.intervalIdx=MERGE_INTERVAL_IDX; card.due=addDays(t, INTERVALS[MERGE_INTERVAL_IDX]); }
+        else card.due=addDays(t, STUBBORN_INTERVALS[card.stubIdx]);
+      } else {
         card.intervalIdx=Math.min((card.intervalIdx<0?0:card.intervalIdx+1), INTERVALS.length-1);
         card.due=addDays(t, INTERVALS[card.intervalIdx]);
-        flow.session.remembered++; addLog("remember",1,15,{note:chunkById(card.id).lemma});
-      } else {
-        card.intervalIdx=0; card.due=addDays(t,1);
-        flow.session.forgot++; addLog("forgot",1,15,{note:chunkById(card.id).lemma});
       }
-      ensureDaily(); state.daily.reviewDone=(state.daily.reviewDone||0)+1; save();
+      if(!card.stubborn && card.consecRight>=MASTER_STREAK && INTERVALS[card.intervalIdx]>=MASTER_MIN_INTERVAL && card.openOk) card.mastered=true;
+    }
+    function crossDayLeft(card, t){
+      card.errors=(card.errors||0)+1; card.consecRight=0;
+      if(card.mastered) card.mastered=false;          /* recheck failed -> revoke */
+      card.intervalIdx=0; card.due=addDays(t,1);
+      if(card.stubborn) { card.stubIdx=0; card.due=addDays(t, STUBBORN_INTERVALS[0]); }
+      else if(card.errors>=STUBBORN_ERRORS){ card.stubborn=true; card.stubIdx=0; card.due=addDays(t, STUBBORN_INTERVALS[0]); }
+    }
+    function answerReview(remember){
+      ensureDaily();
+      var card=flow.queue[flow.i], t=todayStr(), id=card.id, d=state.daily;
+      var lemma=chunkById(id).lemma;
+      var isDue = card.due && card.due<=t;
+      var firstToday = !d.reviewed[id];
+      card.lastReviewDate=t; card.lastResult=remember?"remember":"forgot";
+      if(card.stubborn || !isDue) d.stubbornDone[id]=true;
+      if(firstToday){
+        d.reviewed[id]=true; card.reviews=(card.reviews||0)+1;
+        if(card.priority) card.priority=false;
+        if(isDue){
+          if(remember) crossDayRight(card,t); else crossDayLeft(card,t);
+        } /* extra daily 顽固词 pass when not due: no schedule change */
+        if(remember){ flow.session.remembered++; addLog("remember",1,15,{note:lemma}); }
+        else { flow.session.forgot++; addLog("forgot",1,15,{note:lemma+(card.stubborn?" · 顽固词":"")}); }
+        if(!remember){ d.reappear[id]=1; flow.session.requeued++; requeue(card); }
+      } else {
+        /* in-session reappearance: no cross-day interval change */
+        if(remember){ d.found[id]=true; flow.session.found++; addLog("found",1,10,{note:lemma+" · 当天找回"}); }
+        else if((d.reappear[id]||0) >= REQUEUE_MAX_PER_DAY){
+          card.priority=true; card.due=addDays(t,1); addLog("forgot",1,10,{note:lemma+" · 明日优先"}); toast("「"+lemma+"」明天优先复习");
+        } else { d.reappear[id]=(d.reappear[id]||0)+1; flow.session.requeued++; requeue(card); }
+      }
+      d.reviewDone=(d.reviewDone||0)+1; save();
       flow.i++; flow.revealed=false;
+      if(flow.i<flow.queue.length && nearCap()){
+        /* no overtime: roll every unfinished requeued card to tomorrow as 明日优先 */
+        flow.queue.slice(flow.i).forEach(function(c){ if(d.reappear[c.id]){ c.priority=true; c.due=addDays(t,1); flow.session.rolled++; } });
+        save(); flow.i=flow.queue.length;
+      }
       if(flow.i>=flow.queue.length){
-        ensureDaily(); state.daily.steps.review=true; markActive(); save();
+        d.steps.review=true; markActive(); save();
         var dur=Math.round((Date.now()-flow.start)/1000);
-        addLog("review",flow.queue.length,dur,{note:"记住了 "+flow.session.remembered+" / 没记住 "+flow.session.forgot});
-        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">👏</div><h4>复习完成</h4></div><div class="summary-row"><span>记住了</span><strong>'+flow.session.remembered+'</strong></div><div class="summary-row"><span>没记住</span><strong>'+flow.session.forgot+'</strong></div><button type="button" class="btn btn-primary btn-full" id="rv-done" style="margin-top:14px">回首页</button></div>';
+        addLog("review",flow.queue.length,dur,{note:"记住了 "+flow.session.remembered+" / 没记住 "+flow.session.forgot+" / 找回 "+flow.session.found});
+        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">👏</div><h4>复习完成</h4></div>'+
+          '<div class="summary-row"><span>记住了</span><strong>'+flow.session.remembered+'</strong></div>'+
+          '<div class="summary-row"><span>没记住</span><strong>'+flow.session.forgot+'</strong></div>'+
+          '<div class="summary-row"><span>当天找回</span><strong>'+flow.session.found+'</strong></div>'+
+          (flow.session.rolled?'<div class="summary-row"><span>接近时长上限，移到明天</span><strong>'+flow.session.rolled+'</strong></div>':'')+
+          '<button type="button" class="btn btn-primary btn-full" id="rv-done" style="margin-top:14px">回首页</button></div>';
         document.getElementById("rv-done").onclick=closeFlow; return;
       }
       renderReviewSwipe();
@@ -717,40 +807,58 @@
       if(!flow.queue.length){
         ensureDaily(); state.daily.steps.learn=true; save();
         setFlowTitle("新学词块","");
-        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">📚</div><h4>今日新学已满或本主题学完啦</h4><p style="color:var(--muted);font-size:13px">每日硬顶 '+NEW_CAP+' 个新词块。</p></div><button type="button" class="btn btn-primary btn-full" id="ln-none">回首页</button></div>';
+        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">📚</div><h4>今日新学已满或本主题学完啦</h4><p style="color:var(--muted);font-size:13px">今天上限 '+state.daily.newCap+' 个新词块。</p></div><button type="button" class="btn btn-primary btn-full" id="ln-none">回首页</button></div>';
         document.getElementById("ln-none").onclick=closeFlow; return;
       }
-      flow.i=0; renderLearnSwipe();
+      flow.i=0; flow.session.requeued=0; renderLearnSwipe();
     }
     function renderLearnSwipe(){
       var ch=flow.queue[flow.i];
-      setFlowTitle("新学词块",(flow.i+1)+" / "+flow.queue.length);
+      ensureDaily(); state.daily.newSeen[ch.id]=true; save();
+      var rep=state.daily.reappear[ch.id]||0;
+      setFlowTitle("新学词块", progText());
       document.getElementById("flow-body").innerHTML=
-        '<div class="swipe-hint">看一看，然后 <b class="right">右滑 = 学会了</b>（左滑再看）'+(ch.awl?' · <b style="color:#c2410c">进阶词只认读，不计入造句过关</b>':'')+'</div>'+
+        (rep?'<div class="swipe-hint" style="color:#b54708">🔁 再见面第 '+rep+'/'+REQUEUE_MAX_PER_DAY+' 次</div>':'')+(ch._relearn?'<div class="swipe-hint" style="color:#b54708">📗 重新学（不占今日新词名额）</div>':'')+
+        '<div class="swipe-hint">看一看，然后 <b class="right">右滑 = 学会了</b>（左滑＝过会儿再看）'+(ch.awl?' · <b style="color:#c2410c">进阶词只认读，不计入造句过关</b>':'')+'</div>'+
         ttsBarHTML()+
         '<div class="deck"><div class="deck-card" id="swipe-card">'+cardFaceHTML(ch,"learn")+'</div></div>'+
         '<div class="swipe-btns">'+
         '<button type="button" class="no-btn" id="btn-no" title="再看">←</button>'+
         '<button type="button" class="yes-btn" id="btn-yes" title="学会了">→</button></div>';
       var ctl=bindSwipe(document.getElementById("swipe-card"),
-        function(){ /* left = look again: re-render same card */ toast("再看一眼～"); renderLearnSwipe(); },
+        function(){ learnLeft(ch); },
         function(){ learnAccept(ch); });
       document.getElementById("btn-no").onclick=function(){ ctl.forceLeft(); };
       document.getElementById("btn-yes").onclick=function(){ ctl.forceRight(); };
       if(tts.supported && tts.unlocked && tts.settings.autoRead) setTimeout(function(){ speak(ch.lemma+". "+ch.example); }, 150);
     }
+    function learnLeft(ch){
+      /* not an error, not counted toward 顽固词 */
+      ensureDaily(); var d=state.daily, id=ch.id;
+      d.newLeftAny[id]=true;
+      if((d.reappear[id]||0) >= REQUEUE_MAX_PER_DAY){
+        var card=ensureCard(id); card.seen=false; card.relearn=addDays(todayStr(),1);
+        addLog("learn",0,10,{note:ch.lemma+" · 明天重新学"}); toast("「"+ch.lemma+"」明天再学，不占新词名额");
+      } else { d.reappear[id]=(d.reappear[id]||0)+1; flow.session.requeued++; requeue(ch); toast("过会儿再见～"); }
+      save(); learnNext();
+    }
     function learnAccept(ch){
-      var card=ensureCard(ch.id); card.seen=true; card.intervalIdx=0; card.due=addDays(todayStr(), INTERVALS[0]);
-      ensureDaily(); state.daily.newLearned=(state.daily.newLearned||0)+1;
-      if(ch.awl) state.daily.awlLearned=(state.daily.awlLearned||0)+1;
+      var card=ensureCard(ch.id); var wasRelearn=!!card.relearn || !!ch._relearn;
+      card.seen=true; card.relearn=null; card.intervalIdx=0; card.due=addDays(todayStr(), INTERVALS[0]); /* graduates: first review tomorrow */
+      ensureDaily();
+      if(!wasRelearn && !state.daily.newCounted[ch.id]){ state.daily.newCounted[ch.id]=true; state.daily.newLearned=(state.daily.newLearned||0)+1;
+        if(ch.awl) state.daily.awlLearned=(state.daily.awlLearned||0)+1; }
       flow.session.learned++; save();
       addLog("learn",1,30,{note:ch.lemma+(ch.awl?" · 进阶词":"")});
+      learnNext();
+    }
+    function learnNext(){
       flow.i++;
       if(flow.i>=flow.queue.length){
         ensureDaily(); state.daily.steps.learn=true; markActive(); save();
         var dur=Math.round((Date.now()-flow.start)/1000);
         addLog("learn",flow.session.learned,dur,{note:"本批新学 "+flow.session.learned+" 个"});
-        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">🎉</div><h4>新学完成</h4></div><div class="summary-row"><span>本批</span><strong>'+flow.session.learned+'</strong></div><div class="summary-row"><span>今日累计</span><strong>'+state.daily.newLearned+' / '+NEW_CAP+'</strong></div><button type="button" class="btn btn-primary btn-full" style="margin-top:14px" id="ln-done">回首页</button></div>';
+        document.getElementById("flow-body").innerHTML='<div class="card-block"><div class="big-ok"><div class="emoji">🎉</div><h4>新学完成</h4></div><div class="summary-row"><span>本批</span><strong>'+flow.session.learned+'</strong></div><div class="summary-row"><span>今日累计</span><strong>'+state.daily.newLearned+' / '+state.daily.newCap+'</strong></div><button type="button" class="btn btn-primary btn-full" style="margin-top:14px" id="ln-done">回首页</button></div>';
         document.getElementById("ln-done").onclick=closeFlow; return;
       }
       renderLearnSwipe();
@@ -882,6 +990,7 @@
       }
       return Promise.resolve(sha256Fallback(str));
     }
+    if(/[?&]test=1/.test(location.search)) window.__ket={state:function(){return state;},save:save,load:load,ensureDaily:ensureDaily,dueCards:dueCards,availableNew:availableNew,flow:function(){return flow;},refreshHome:function(){refreshHome();},openFlow:openFlow,closeFlow:closeFlow,todayStr:todayStr,addDays:addDays,C:{REQUEUE_GAP:REQUEUE_GAP,REQUEUE_MAX_PER_DAY:REQUEUE_MAX_PER_DAY,NEW_CAP_REDUCED:NEW_CAP_REDUCED}};
     var booted=false;
     function enterApp(){
       document.body.classList.remove("locked");
