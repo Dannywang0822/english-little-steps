@@ -1,11 +1,16 @@
 # CloudBase 域名策略（MVP）
 
 > envId: `english-little-steps-d0a2b84764b` · 上海 `ap-shanghai`  
-> 体验版**无法**把 `dannywang0822.github.io` 加进安全域名；默认可用 `*.tcloudbaseapp.com`。
+> 体验版**无法**把 `dannywang0822.github.io` 加进安全域名；默认可用 `*.tcloudbaseapp.com`。  
+> **Hosting URL（MVP）：** https://english-little-steps-d0a2b84764b-1408940790.tcloudbaseapp.com
 
 ## Option A · MVP 推荐：静态托管到 CloudBase
 
-把同一套静态文件部署到 CloudBase **静态网站托管**，用默认域名访问（形如 `https://<envId>-xxxx.tcloudbaseapp.com`）。该域名已在安全来源白名单内，大陆可直连注册/登录/同步。
+把同一套静态文件部署到 CloudBase **静态网站托管**，用默认域名访问。本环境 Hosting URL：
+
+`https://english-little-steps-d0a2b84764b-1408940790.tcloudbaseapp.com`
+
+该域名已在安全来源白名单内，大陆可直连注册/登录/同步。
 
 ### Danny 部署步骤（需腾讯云登录，本 Bot 未代登）
 

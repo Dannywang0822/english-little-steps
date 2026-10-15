@@ -1,9 +1,9 @@
 /**
  * CloudBase Web config (public-by-design). Data protected by console security rules.
- * No Admin / secret keys here. Optional accessKey = Publishable Key from console.
+ * No Admin / secret keys here. accessKey = Publishable Key from console.
  */
 window.__CLOUDBASE_CONFIG__ = {
   envId: "english-little-steps-d0a2b84764b",
-  region: "ap-shanghai"
-  /* accessKey: "YOUR_PUBLISHABLE_KEY" — only if console requires it for Web */
+  region: "ap-shanghai",
+  accessKey: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjlkMWRjMzFlLWI0ZDAtNDQ4Yi1hNzZmLWIwY2M2M2Q4MTQ5OCJ9.eyJpc3MiOiJodHRwczovL2VuZ2xpc2gtbGl0dGxlLXN0ZXBzLWQwYTJiODQ3NjRiLmFwLXNoYW5naGFpLnRjYi1hcGkudGVuY2VudGNsb3VkYXBpLmNvbSIsInN1YiI6ImFub24iLCJhdWQiOiJlbmdsaXNoLWxpdHRsZS1zdGVwcy1kMGEyYjg0NzY0YiIsImV4cCI6NDA5NTc0ODM3OCwiaWF0IjoxNzkyMDY1MTc4LCJub25jZSI6Ik11anFXZGVJUmppXzNJSHFHQnNaUkEiLCJhdF9oYXNoIjoiTXVqcVdkZUlSamlfM0lIcUdCc1pSQSIsIm5hbWUiOiJBbm9ueW1vdXMiLCJzY29wZSI6ImFub255bW91cyIsInByb2plY3RfaWQiOiJlbmdsaXNoLWxpdHRsZS1zdGVwcy1kMGEyYjg0NzY0YiIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJ1c2VyX3R5cGUiOiIiLCJjbGllbnRfdHlwZSI6ImNsaWVudF91c2VyIiwiaXNfc3lzdGVtX2FkbWluIjpmYWxzZX0.LB2-q8mfObK6DFKj6GPhsrlgGQrWAW_8XAUeDo5Ngl8-fo9rS_KfOzWYua7ci_4CLICf9FnPmqJOLnnKIuVBI5G_ZQkUG2j9WEjFl01CZzx5YMciL1hUCwkSGTJce5KaE359n6IN-d7NRGhXFHoPvsK17bUn-BCpPgAy3XbleeDlLWSAQM0ez_XRYfim94Ulol5gAIwsYDIk8qOIg6CWC33u731sYeFwxuVCg7FFbQDM4ya2tp_gV-uc5ODtxVHUTE_aCk_wG79zwuYn7daAuDvSTt-iq5aoZc50lQ-WH-qdVMTe_j3qpjCPuH8B7DKuRxz4ujZsk6Xaz-vP3_EQfQ"
 };
