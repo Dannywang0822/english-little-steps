@@ -198,6 +198,9 @@
     .auth-pane.on{display:block}
     .auth-pane .btn{margin-top:4px}
     .auth-hint{font-size:12px;color:var(--muted);margin:8px 0 0;line-height:1.45}
+    .code-row{display:flex;gap:8px;align-items:stretch;margin-bottom:10px}
+    .code-row input{flex:1;margin-bottom:0!important}
+    .code-row .btn{flex-shrink:0;margin-top:0!important;white-space:nowrap;padding:0 12px;font-size:13px}
     .auth-cloud-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-weight:700;margin-bottom:8px}
     .auth-cloud-badge.off{background:var(--bg);color:var(--muted)}
     .pin-fold{margin-top:12px;border-top:1px dashed var(--border);padding-top:10px}
@@ -250,11 +253,15 @@
           <input type="email" id="cr-email" placeholder="邮箱（例如你的 Gmail）" autocomplete="email" autocapitalize="off" />
           <input type="password" id="cr-pass" placeholder="设置密码（至少 8 位，含字母和数字）" autocomplete="new-password" minlength="8" />
           <input type="password" id="cr-pass2" placeholder="再输入一次密码" autocomplete="new-password" minlength="8" />
+          <div class="code-row">
+            <input type="text" id="cr-code" placeholder="邮箱验证码" autocomplete="one-time-code" inputmode="numeric" maxlength="12" />
+            <button type="button" class="btn btn-ghost" id="btn-send-code">发送验证码</button>
+          </div>
           <div class="login-err" id="cr-err"></div>
           <div class="login-ok" id="cr-ok"></div>
           <button type="submit" class="btn btn-primary btn-full" id="btn-cloud-reg">注册账号</button>
         </form>
-        <p class="auth-hint">可用任意邮箱注册多个账号，各自进度按账号隔离。若注册提示连不上云端，请先用「游客继续」学习，本地进度不会丢。</p>
+        <p class="auth-hint">先点「发送验证码」到邮箱，再填码注册。密码≥8 位且含字母和数字。可用任意邮箱注册多个账号；若连不上云端，请先用「游客继续」。</p>
       </div>
       <div class="sync-dot" id="sync-status"></div>
     </div>
@@ -1308,17 +1315,19 @@
     function cloudMsg(err){
       var m=(err && (err.message||err.code))||"出错了";
       var code=(err && err.code)||"";
-      if(/otp_required|email_activation_sent/i.test(code) || /验证码|验证邮件|激活链接/.test(m)) return m;
-      if(/invalid-api-key|API key|envId|YOUR_ENV/i.test(m)) return "CloudBase 配置无效，请检查 cloudbase-config.js 的 envId";
+      if(/already_registered/i.test(code)) return "这个邮箱已经注册过，去「邮箱登录」试试";
+      if(/otp_required|email_activation_sent/i.test(code) || /验证码|验证邮件|激活链接|发送验证码/.test(m)) return m;
+      if(/invalid_verification|verification_code|verification_token|getVerification|verify\(/i.test(m) || /invalid_verification|verification/i.test(code)) return "验证码不对或已过期，请重新发送后再试";
+      if(/invalid-api-key|API key|envId|YOUR_ENV|accessKey|Publishable/i.test(m)) return "CloudBase 配置无效，请检查 cloudbase-config.js 的 envId / accessKey";
       if(/permission_denied|安全域名|cors permission|not in.*domains/i.test(m)) return "当前域名未加入 CloudBase 安全来源。MVP 请用 CloudBase 静态托管域名打开；或升级后把本站域名加入白名单。也可先用「游客继续」。";
       if(/network|unavailable|Failed to load|Failed to fetch|timeout|CORS|unreachable/i.test(m)) return "暂时连不上云端，请先点「游客继续」——进度会保存在本机；云端恢复后可用同一邮箱注册并选择导入。";
-      if(/email-already|already_exists|failed_precondition|已被注册/i.test(m) || /already_exists|failed_precondition/i.test(code)) return "这个邮箱已经注册过，去「邮箱登录」试试";
+      if(/email-already|already_exists|failed_precondition|已被注册|已注册/i.test(m) || /already_exists|failed_precondition/i.test(code)) return "这个邮箱已经注册过，去「邮箱登录」试试";
       if(/wrong-password|user-not-found|invalid-credential|invalid_password|not_found/i.test(m) || /invalid_password|not_found/i.test(code)) return "邮箱或密码不对";
       if(/weak-password|password_too_weak|至少 8/i.test(m) || /password_too_weak|weak-password/i.test(code)) return "密码至少 8 位，且需包含字母和数字";
       if(/invalid-email|invalid_email|invalid_argument/i.test(m) && /邮箱|email/i.test(m)) return "邮箱格式不对";
       if(/invalid_email/i.test(code)) return "邮箱格式不对";
-      if(/云端未配置/.test(m)) return "还没配置 CloudBase：请设置 cloudbase-config.js 的 envId";
-      if(/resource_exhausted|RATE_LIMITED/i.test(m) || /resource_exhausted/i.test(code)) return "尝试太频繁，请稍后再试；也可先用「游客继续」。";
+      if(/云端未配置/.test(m)) return "还没配置 CloudBase：请设置 cloudbase-config.js 的 envId 与 accessKey";
+      if(/resource_exhausted|RATE_LIMITED|too_many|频繁/i.test(m) || /resource_exhausted/i.test(code)) return "尝试太频繁，请稍后再试；也可先用「游客继续」。";
       return m;
     }
 
@@ -1348,6 +1357,39 @@
       KetCloud.login(email, pass).then(afterCloudAuth).catch(function(ex){ err.textContent=cloudMsg(ex); }).then(function(){ btn.disabled=false; });
     });
 
+    var _sendCodeCooldown=0;
+    function tickSendCodeBtn(){
+      var btn=document.getElementById("btn-send-code");
+      if(!btn) return;
+      if(_sendCodeCooldown>0){
+        btn.disabled=true;
+        btn.textContent=_sendCodeCooldown+"s 后重发";
+        _sendCodeCooldown--;
+        setTimeout(tickSendCodeBtn, 1000);
+      } else {
+        btn.disabled=false;
+        btn.textContent="发送验证码";
+      }
+    }
+    document.getElementById("btn-send-code").addEventListener("click", function(){
+      var err=document.getElementById("cr-err"), ok=document.getElementById("cr-ok");
+      err.textContent=""; ok.textContent="";
+      if(!window.KetCloud || !KetCloud.enabled){ err.textContent=cloudMsg(new Error("云端未配置")); return; }
+      var email=document.getElementById("cr-email").value.trim();
+      if(!email){ err.textContent="请先填写邮箱"; return; }
+      var btn=document.getElementById("btn-send-code");
+      btn.disabled=true;
+      KetCloud.sendRegisterCode(email).then(function(){
+        ok.textContent="验证码已发送，请查收邮箱（含垃圾箱）";
+        _sendCodeCooldown=60;
+        tickSendCodeBtn();
+      }).catch(function(ex){
+        err.textContent=cloudMsg(ex);
+        btn.disabled=false;
+        btn.textContent="发送验证码";
+      });
+    });
+
     document.getElementById("cloud-reg-form").addEventListener("submit", function(e){
       e.preventDefault();
       var err=document.getElementById("cr-err"), ok=document.getElementById("cr-ok");
@@ -1355,11 +1397,13 @@
       if(!window.KetCloud || !KetCloud.enabled){ err.textContent=cloudMsg(new Error("云端未配置")); return; }
       var email=document.getElementById("cr-email").value.trim();
       var p1=document.getElementById("cr-pass").value, p2=document.getElementById("cr-pass2").value;
+      var code=document.getElementById("cr-code").value.trim();
       if(p1.length<8){ err.textContent="密码至少 8 位，且需包含字母和数字"; return; }
       if(!/[A-Za-z]/.test(p1) || !/[0-9]/.test(p1)){ err.textContent="密码需同时包含字母和数字"; return; }
       if(p1!==p2){ err.textContent="两次密码不一致"; return; }
+      if(!code){ err.textContent="请填写邮箱验证码（先点「发送验证码」）"; return; }
       var btn=document.getElementById("btn-cloud-reg"); btn.disabled=true;
-      KetCloud.register(email, p1).then(function(user){
+      KetCloud.register(email, p1, code).then(function(user){
         ok.textContent="注册成功！正在进入…";
         return afterCloudAuth(user);
       }).catch(function(ex){ err.textContent=cloudMsg(ex); }).then(function(){ btn.disabled=false; });

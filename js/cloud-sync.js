@@ -6,9 +6,10 @@
  * MVP schema (single-doc bundle for speed; collections may still be created by HR):
  *   user_bundles/{uid}  — { state, logs, tts, updatedAt, email, updatedAtMs }
  *
- * Public API unchanged: bootstrap, register, login, logout, currentUser,
- * syncAfterLogin, schedulePush, flush, merge helpers, mode, hooks.
- * No Firebase dual-write.
+ * Public API: bootstrap, sendRegisterCode, register(email,password,code),
+ * login, logout, currentUser, syncAfterLogin, schedulePush, flush, merge helpers, mode, hooks.
+ * Register = getVerification → verify → signUp (email OTP). Login = email+password.
+ * Collection: user_bundles only (doc id = auth.uid). No Firebase dual-write.
  */
 (function (global) {
   "use strict";
@@ -76,6 +77,7 @@
     _db: null,
     _auth: null,
     _timer: null,
+    _pendingVerification: null, /* { verification_id, is_user, email } */
     _hooks: { getLocalBundle: null, applyMerged: null, onAuth: null, confirmImport: null },
 
     configureHooks: function (h) {
@@ -224,48 +226,138 @@
       return Promise.resolve();
     },
 
-    register: function (email, password) {
+    _nameFromEmail: function (email) {
+      var local = String(email || "").split("@")[0] || "user";
+      var name = local.replace(/[^a-zA-Z0-9_\-\u4e00-\u9fff]/g, "_").slice(0, 32);
+      return name || "user";
+    },
+
+    /** Step 1: send email OTP; stores verification_id on KetCloud._pendingVerification */
+    sendRegisterCode: function (email) {
+      var self = this;
+      if (!self.enabled) return Promise.reject(new Error("云端未配置"));
+      email = String(email || "").trim();
+      if (!email) return Promise.reject(new Error("请先填写邮箱"));
+      var auth = self._auth;
+      if (!auth || typeof auth.getVerification !== "function") {
+        return Promise.reject(new Error("当前 SDK 不支持邮箱验证码"));
+      }
+      return auth.getVerification({ email: email }).then(function (res) {
+        var u = unwrapAuth(res);
+        if (u.error) throw u.error;
+        var data = u.data || {};
+        var vid = data.verification_id || data.verificationId;
+        if (!vid) throw new Error("未获取到验证码凭证，请稍后重试");
+        self._pendingVerification = {
+          verification_id: String(vid),
+          is_user: !!(data.is_user || data.isUser),
+          email: email
+        };
+        return self._pendingVerification;
+      });
+    },
+
+    /**
+     * Step 2–3: verify code + signUp (or signIn if email already registered).
+     * Requires prior sendRegisterCode for the same email.
+     */
+    register: function (email, password, verificationCode) {
       var self = this;
       if (!self.enabled) return Promise.reject(new Error("云端未配置"));
       email = String(email || "").trim();
       password = String(password || "");
+      verificationCode = String(verificationCode || "").trim();
       if (!email || !password) return Promise.reject(new Error("请填写邮箱和密码"));
-      if (password.length < 8) return Promise.reject(new Error("密码至少 8 位，且需包含字母和数字"));
-
+      if (!verificationCode) return Promise.reject(new Error("请填写邮箱验证码"));
+      if (password.length < 8 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+        return Promise.reject(new Error("密码至少 8 位，且需包含字母和数字"));
+      }
+      var pending = self._pendingVerification;
+      if (!pending || !pending.verification_id) {
+        return Promise.reject(new Error("请先点击「发送验证码」"));
+      }
+      if (pending.email && pending.email.toLowerCase() !== email.toLowerCase()) {
+        return Promise.reject(new Error("邮箱已更改，请重新发送验证码"));
+      }
       var auth = self._auth;
+      if (!auth || typeof auth.verify !== "function" || typeof auth.signUp !== "function") {
+        return Promise.reject(new Error("当前 SDK 不支持验证码注册"));
+      }
 
-      /* Prefer Auth v3 signUp (may require email OTP if enabled in console) */
-      if (typeof auth.signUp === "function") {
-        return auth.signUp({ email: email, password: password }).then(function (res) {
-          var u = unwrapAuth(res);
-          if (u.error) throw u.error;
-          var data = u.data || {};
-          /* OTP gate: console has email OTP on — UI is password-only for now */
-          if (typeof data.verifyOtp === "function") {
-            var err = new Error("注册需要邮箱验证码，请在 CloudBase 控制台开启邮箱验证码（可用内置发信）后重试；或先用游客继续。");
-            err.code = "otp_required";
-            throw err;
-          }
-          var user = normalizeUser(data.user || (data.session && data.session.user) || data);
-          if (!user) {
-            /* Some builds return session only after verify; try password login */
-            return self.login(email, password);
-          }
+      return auth.verify({
+        verification_id: pending.verification_id,
+        verification_code: verificationCode
+      }).then(function (res) {
+        var u = unwrapAuth(res);
+        if (u.error) throw u.error;
+        var data = u.data || {};
+        var token = data.verification_token || data.verificationToken;
+        if (!token) throw new Error("验证失败，请检查验证码后重试");
+
+        if (pending.is_user) {
+          return self._signInExistingAfterVerify(email, password, token);
+        }
+
+        var name = self._nameFromEmail(email);
+        return auth.signUp({
+          email: email,
+          verification_code: verificationCode,
+          verification_token: token,
+          name: name,
+          password: password
+        }).then(function (signRes) {
+          var su = unwrapAuth(signRes);
+          if (su.error) throw su.error;
+          var sdata = su.data || {};
+          var user = normalizeUser(sdata.user || (sdata.session && sdata.session.user) || sdata);
+          self._pendingVerification = null;
+          if (!user) return self.login(email, password);
           self.user = user;
           return self._ensureUserBundleMeta(user).then(function () { return user; });
         });
-      }
+      });
+    },
 
-      /* Legacy v1-style email register (sends activation mail; needs SMTP) */
-      if (typeof auth.signUpWithEmailAndPassword === "function") {
-        return auth.signUpWithEmailAndPassword(email, password).then(function () {
-          var err = new Error("验证邮件已发送，请打开邮箱点击激活链接后再登录；也可先用游客继续。");
-          err.code = "email_activation_sent";
-          throw err;
-        });
-      }
-
-      return Promise.reject(new Error("当前 SDK 不支持注册，请升级或检查 CloudBase 登录方式"));
+    /** Existing email after verify: prefer password login, else verification_token signIn */
+    _signInExistingAfterVerify: function (email, password, verificationToken) {
+      var self = this;
+      var auth = self._auth;
+      return self.login(email, password).then(function (user) {
+        self._pendingVerification = null;
+        return user;
+      }).catch(function () {
+        if (typeof auth.signIn === "function") {
+          return auth.signIn({
+            username: email,
+            verification_token: verificationToken
+          }).then(function (loginState) {
+            var u = unwrapAuth(loginState);
+            if (u.error) {
+              var e0 = new Error("该邮箱已注册，请改用「邮箱登录」输入密码登录");
+              e0.code = "already_registered";
+              throw e0;
+            }
+            var data = u.data || loginState || {};
+            var user = normalizeUser(
+              data.user ||
+              (data.session && data.session.user) ||
+              auth.currentUser ||
+              data
+            );
+            if (!user) {
+              var e1 = new Error("该邮箱已注册，请改用「邮箱登录」输入密码登录");
+              e1.code = "already_registered";
+              throw e1;
+            }
+            self.user = user;
+            self._pendingVerification = null;
+            return user;
+          });
+        }
+        var e2 = new Error("该邮箱已注册，请改用「邮箱登录」输入密码登录");
+        e2.code = "already_registered";
+        throw e2;
+      });
     },
 
     login: function (email, password) {
