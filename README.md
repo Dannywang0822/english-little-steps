@@ -72,7 +72,43 @@ python3 -m http.server 8765
 - iOS Safari / 安卓微信：只在用户手势里发声。第一次点屏幕时解锁，解锁之后才会自动朗读。浏览器不支持时隐藏 🔊，并显示一行小提示。
 - 点 🔊 不会触发左右滑卡（按下事件不再往卡片传，滑卡逻辑也会忽略从 🔊 上开始的拖动）。朗读不计入 40 分钟时长。
 
-## 登录锁（轻量前端锁）
+
+## 云端同步（Firebase · Phase1+2）
+
+未配置时应用自动走 **纯 localStorage**（与以前一样）。配置后可用邮箱注册/登录，进度同步到 Firestore。
+
+### 一次性配置（Danny）
+
+1. 打开 [Firebase Console](https://console.firebase.google.com/) 新建（或选用）项目。
+2. 添加 **Web App**，复制配置对象。
+3. 在本仓库根目录：
+   ```bash
+   cp firebase-config.example.js firebase-config.js
+   ```
+   把 `YOUR_*` 占位符换成你的 Web 配置。**`firebase-config.js` 已在 `.gitignore`，不要提交。**
+4. Authentication → Sign-in method → 启用 **Email/Password**。
+5. Firestore → 创建数据库（生产模式即可）→ 规则里粘贴仓库根目录的 `firestore.rules` 并发布。
+6. 本地用静态服务打开页面（或 GitHub Pages）。右上角应显示「云端已就绪」。
+7. **第一个账号在应用内注册**：打开「注册」页，用邮箱（例如 `oppodanny@gmail.com`）和你自己设的密码注册。密码只保存在 Firebase Auth，**不要**写进 `firebase-config.js`、`index.html`、README 或任何 git 提交。
+
+### 登录页三种方式
+
+| 方式 | 行为 |
+|---|---|
+| **游客继续** | 只用本机 localStorage，不连云端 |
+| **邮箱登录** | Firebase Auth；登录后拉取/合并云端进度 |
+| **注册** | 创建邮箱账号后自动进入并同步 |
+| 家长本地锁（折叠） | 旧的前端 PIN，**不是**云端安全；可选 |
+
+同步策略摘要见 `docs/cloud-sync-proposal.md`（卡片 `updatedAt`+保守间隔；打卡并集；句子 max；TTS 取较新；写操作 debounce ~1.5s；启用 Firestore 离线持久化）。
+
+### 隐私
+
+- 云端 `displayName` 默认「小学员」，不要存孩子真名/学校/手机。
+- Security Rules：仅 `request.auth.uid == userId` 可读写自己的数据。
+- 不要把服务账号 JSON 或 Admin SDK 密钥放进本仓库。
+
+## 登录锁（轻量前端锁 · 可选）
 
 - 打开页面先看到登录页。用户名区分大小写。账号由家长掌握，**README 和代码里都不写明文密码**。
 - 页面只保存用户名和密码的 SHA-256 哈希，比对时用 `crypto.subtle`。在 http 等不支持 `crypto.subtle` 的环境下，改用页面内置的小型 JS SHA-256。
