@@ -15,7 +15,7 @@
   "use strict";
   var DEBOUNCE_MS = 1500;
   var PLACEHOLDER = /YOUR_|REPLACE_|xxxxx/i;
-  var SDK_CDN = "https://static.cloudbase.net/cloudbase-js-sdk/3.0.1/cloudbase.full.js";
+  var SDK_CDN = "https://static.cloudbase.net/cloudbase-js-sdk/3.10.2/cloudbase.full.js";
   var BUNDLE_COL = "user_bundles";
 
   function isValidConfig(c) {
