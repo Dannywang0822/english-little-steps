@@ -117,7 +117,7 @@
     /* Swipe deck */
     .swipe-hint{text-align:center;font-size:12px;color:var(--muted);margin-bottom:10px}
     .swipe-hint b.left{color:var(--red)} .swipe-hint b.right{color:var(--green)}
-    .deck{position:relative;height:340px;touch-action:none;user-select:none;-webkit-user-select:none;margin-bottom:8px}
+    .deck{position:relative;height:410px;touch-action:none;user-select:none;-webkit-user-select:none;margin-bottom:8px}
     .deck-card{
       position:absolute;inset:0;background:#fff;border-radius:18px;box-shadow:var(--shadow);
       border:1.5px solid var(--border);padding:20px 18px;overflow:hidden;
@@ -143,6 +143,13 @@
 
     .toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%) translateY(12px);background:rgba(26,34,51,.92);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:100;max-width:90vw}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .spk{border:none;background:var(--primary-soft);color:var(--primary);border-radius:999px;font-size:13px;padding:2px 8px;margin-left:6px;cursor:pointer;vertical-align:middle;font-family:inherit;line-height:1.4}
+    .spk:active{transform:scale(.92)}
+    .no-tts .spk{display:none!important}
+    .tts-bar{display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:10px;flex-wrap:wrap}
+    .tts-bar button{border:1.5px solid var(--border);background:#fff;border-radius:999px;padding:4px 12px;font-size:12px;font-family:inherit;cursor:pointer;color:var(--text)}
+    .tts-bar button.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .tts-note{font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px}
     footer{text-align:center;padding:18px;font-size:11px;color:#b0b8c8}
   </style>
 </head>
@@ -258,6 +265,74 @@
       return Math.round((db-da)/86400000);
     }
     function toast(m){ var t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(function(){t.classList.remove("show");},2000); }
+
+    /* ===== TTS (Web Speech API only) ===== */
+    var TTS_KEY="ket_tts_settings_v1";
+    var tts={supported:("speechSynthesis" in window)&&("SpeechSynthesisUtterance" in window),voice:null,unlocked:false,
+      settings:{slow:false,autoRead:true}};
+    try{ var ts=JSON.parse(localStorage.getItem(TTS_KEY)||"null"); if(ts){ tts.settings.slow=!!ts.slow; tts.settings.autoRead=ts.autoRead!==false; } }catch(e){}
+    function saveTts(){ try{ localStorage.setItem(TTS_KEY, JSON.stringify(tts.settings)); }catch(e){} }
+    function pickVoice(){
+      if(!tts.supported) return;
+      var vs=window.speechSynthesis.getVoices()||[];
+      var norm=function(l){return String(l||"").replace("_","-").toLowerCase();};
+      tts.voice = vs.filter(function(v){return norm(v.lang)==="en-gb";})[0]
+        || vs.filter(function(v){return norm(v.lang)==="en-us";})[0]
+        || vs.filter(function(v){return norm(v.lang).indexOf("en")===0;})[0] || null;
+    }
+    if(tts.supported){
+      pickVoice();
+      if(window.speechSynthesis.addEventListener) window.speechSynthesis.addEventListener("voiceschanged",pickVoice);
+      else window.speechSynthesis.onvoiceschanged=pickVoice;
+    }
+    function speak(text){
+      if(!tts.supported||!text) return;
+      try{
+        var s=window.speechSynthesis; s.cancel();
+        var u=new SpeechSynthesisUtterance(String(text).replace(/_{2,}/g," blank "));
+        if(!tts.voice) pickVoice();
+        if(tts.voice){ u.voice=tts.voice; u.lang=tts.voice.lang; } else u.lang="en-GB";
+        u.rate=tts.settings.slow?0.7:0.95;
+        s.speak(u);
+      }catch(e){}
+    }
+    /* first user gesture unlocks audio (iOS Safari / WeChat require speak() inside a gesture) */
+    function unlockTts(){
+      if(tts.unlocked||!tts.supported) return;
+      tts.unlocked=true;
+      try{ var u=new SpeechSynthesisUtterance(" "); u.volume=0; window.speechSynthesis.speak(u); }catch(e){}
+      Array.prototype.forEach.call(document.querySelectorAll(".tts-unlock-note"), function(n){ n.remove(); });
+    }
+    ["touchend","click"].forEach(function(ev){ document.addEventListener(ev, unlockTts, {capture:true, passive:true}); });
+    function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+    function spk(text){ return '<button type="button" class="spk" data-say="'+esc(text)+'" aria-label="朗读">🔊</button>'; }
+    function ttsBarInner(){
+      return '<button type="button" class="tts-toggle'+(tts.settings.slow?" on":"")+'" data-tts="slow">🐢 慢速</button>'+
+        '<button type="button" class="tts-toggle'+(!tts.settings.slow?" on":"")+'" data-tts="normal">正常</button>'+
+        '<button type="button" class="tts-toggle'+(tts.settings.autoRead?" on":"")+'" data-tts="auto">自动朗读 '+(tts.settings.autoRead?"开":"关")+'</button>';
+    }
+    function ttsBarHTML(){
+      if(!tts.supported) return '<div class="tts-note">这个浏览器不支持朗读，可以请家长读给你听～</div>';
+      return '<div class="tts-bar">'+ttsBarInner()+'</div>'+(tts.unlocked?'':'<div class="tts-note tts-unlock-note">先点一下屏幕，就能听发音啦（手机浏览器要求）</div>');
+    }
+    ["pointerdown","touchstart","mousedown"].forEach(function(ev){
+      document.addEventListener(ev, function(e){
+        if(e.target.closest && e.target.closest(".spk,.tts-toggle")) e.stopPropagation();
+      }, true);
+    });
+    document.addEventListener("click", function(e){
+      var b=e.target.closest && e.target.closest(".spk");
+      if(b){ e.stopPropagation(); e.preventDefault(); unlockTts(); speak(b.getAttribute("data-say")); return; }
+      var t=e.target.closest && e.target.closest(".tts-toggle");
+      if(t){
+        e.stopPropagation(); unlockTts();
+        var k=t.getAttribute("data-tts");
+        if(k==="slow") tts.settings.slow=true; else if(k==="normal") tts.settings.slow=false; else tts.settings.autoRead=!tts.settings.autoRead;
+        saveTts();
+        Array.prototype.forEach.call(document.querySelectorAll(".tts-bar"), function(bar){ bar.innerHTML=ttsBarInner(); });
+      }
+    }, true);
+    if(!tts.supported) document.documentElement.classList.add("no-tts");
 
     function allChunks(){
       var list=[]; DATA.topics.forEach(function(t){ t.chunks.forEach(function(c){ list.push(Object.assign({topicId:t.id,topicName:t.name},c)); }); });
@@ -526,10 +601,10 @@
           if(stampNo) stampNo.style.opacity=0; if(stampYes) stampYes.style.opacity=0;
         }
       }
-      cardEl.addEventListener("touchstart", function(e){ var t=e.changedTouches[0]; onStart(t.clientX,t.clientY); }, {passive:true});
+      cardEl.addEventListener("touchstart", function(e){ if(e.target.closest(".spk")) return; var t=e.changedTouches[0]; onStart(t.clientX,t.clientY); }, {passive:true});
       cardEl.addEventListener("touchmove", function(e){ var t=e.changedTouches[0]; onMove(t.clientX,t.clientY); }, {passive:true});
       cardEl.addEventListener("touchend", onEnd);
-      cardEl.addEventListener("mousedown", function(e){ e.preventDefault(); onStart(e.clientX,e.clientY);
+      cardEl.addEventListener("mousedown", function(e){ if(e.target.closest(".spk")) return; e.preventDefault(); onStart(e.clientX,e.clientY);
         function mm(ev){ onMove(ev.clientX,ev.clientY); }
         function mu(){ onEnd(); window.removeEventListener("mousemove",mm); window.removeEventListener("mouseup",mu); }
         window.addEventListener("mousemove",mm); window.addEventListener("mouseup",mu);
@@ -541,13 +616,13 @@
       var detail = mode==="learn" || mode==="revealed";
       var html = '<div class="stamp no">没记住</div><div class="stamp yes">记住了</div>';
       html += '<div class="label">'+(ch.topicName||"")+(mode==="learn"?" · 新词块":" · 复习")+'</div>';
-      html += '<div class="lemma">'+ch.lemma+'<span class="phon">'+(ch.phonetic||"")+'</span>'+(ch.awl?'<span class="awl-badge">进阶词</span>':'')+'</div>';
+      html += '<div class="lemma">'+ch.lemma+spk(ch.lemma)+'<span class="phon">'+(ch.phonetic||"")+'</span>'+(ch.awl?'<span class="awl-badge">进阶词</span>':'')+'</div>';
       html += '<div class="gloss">'+ch.gloss+'</div>';
       if(detail){
         html += '<div class="family">发音提示：'+(ch.phonetic||"—")+' · 大声读 3 遍 🗣️</div>';
-        if(ch.sentenceFrame) html += '<div class="label">句框</div><div class="frame">'+ch.sentenceFrame+'</div>';
-        html += '<div class="label">常用搭配</div>'+ch.collocations.map(function(x){return '<span class="tag">'+x+'</span>';}).join("");
-        html += '<div class="label" style="margin-top:8px">例句</div><div class="ex">"'+ch.example+'"</div><div class="ex-zh">'+ch.exampleZh+'</div>';
+        if(ch.sentenceFrame) html += '<div class="label">句框</div><div class="frame">'+ch.sentenceFrame+spk(ch.sentenceFrame)+'</div>';
+        html += '<div class="label">常用搭配</div>'+ch.collocations.map(function(x){return '<span class="tag">'+x+spk(x)+'</span>';}).join("");
+        html += '<div class="label" style="margin-top:8px">例句</div><div class="ex">"'+ch.example+'"'+spk(ch.example)+'</div><div class="ex-zh">'+ch.exampleZh+'</div>';
         if(ch.wordFamily && ch.wordFamily.length) html += '<div class="family" style="margin-top:8px">词族：'+ch.wordFamily.join(" / ")+'</div>';
       } else {
         html += '<div class="hint-box" style="margin-top:24px">先想意思～点「看提示」或直接左右滑</div>';
@@ -573,7 +648,7 @@
       var body=document.getElementById("flow-body");
       body.innerHTML=
         '<div class="swipe-hint">👈 <b class="left">左滑 = 没记住</b>　<b class="right">右滑 = 记住了</b> 👉</div>'+
-        '<div class="deck"><div class="deck-card" id="swipe-card">'+cardFaceHTML(ch, flow.revealed?"revealed":"review")+'</div></div>'+
+        ttsBarHTML()+'<div class="deck"><div class="deck-card" id="swipe-card">'+cardFaceHTML(ch, flow.revealed?"revealed":"review")+'</div></div>'+
         '<div class="swipe-btns">'+
         '<button type="button" class="no-btn" id="btn-no" title="没记住">←</button>'+
         '<button type="button" class="peek-btn" id="btn-peek">'+(flow.revealed?"已显示":"看提示")+'</button>'+
@@ -628,6 +703,7 @@
       setFlowTitle("新学词块",(flow.i+1)+" / "+flow.queue.length);
       document.getElementById("flow-body").innerHTML=
         '<div class="swipe-hint">看一看，然后 <b class="right">右滑 = 学会了</b>（左滑再看）'+(ch.awl?' · <b style="color:#c2410c">进阶词只认读，不计入造句过关</b>':'')+'</div>'+
+        ttsBarHTML()+
         '<div class="deck"><div class="deck-card" id="swipe-card">'+cardFaceHTML(ch,"learn")+'</div></div>'+
         '<div class="swipe-btns">'+
         '<button type="button" class="no-btn" id="btn-no" title="再看">←</button>'+
@@ -637,6 +713,7 @@
         function(){ learnAccept(ch); });
       document.getElementById("btn-no").onclick=function(){ ctl.forceLeft(); };
       document.getElementById("btn-yes").onclick=function(){ ctl.forceRight(); };
+      if(tts.supported && tts.unlocked && tts.settings.autoRead) setTimeout(function(){ speak(ch.lemma+". "+ch.example); }, 150);
     }
     function learnAccept(ch){
       var card=ensureCard(ch.id); card.seen=true; card.intervalIdx=0; card.due=addDays(todayStr(), INTERVALS[0]);
@@ -669,19 +746,23 @@
       document.getElementById("flow-body").innerHTML=
         '<div class="card-block">'+
         '<div class="label">用句框写一句关于你自己的话</div>'+
-        (ch.sentenceFrame?'<div class="frame">'+ch.sentenceFrame+'</div>':'')+
+        ttsBarHTML()+(ch.sentenceFrame?'<div class="frame">'+ch.sentenceFrame+spk(ch.sentenceFrame)+'</div>':'')+
         '<p style="font-size:14px;font-weight:600;margin:8px 0">'+ch.productionPrompt+'</p>'+
-        '<div class="hint-box">可以模仿：<strong>'+ch.example+'</strong><br>发音：'+ch.lemma+' '+(ch.phonetic||"")+'</div>'+
+        '<div class="hint-box">可以模仿：<strong>'+ch.example+'</strong>'+spk(ch.example)+'<br>发音：'+ch.lemma+' '+(ch.phonetic||"")+spk(ch.lemma)+'</div>'+
         '<textarea id="open-text" style="margin-top:10px" placeholder="写一句短短的英文（至少 3 个词）"></textarea>'+
         '<div class="label" style="margin-top:8px">词库（点一下加入）</div>'+
         '<div class="bank" id="wbank">'+(ch.wordBank||[]).map(function(w){return '<button type="button">'+w+'</button>';}).join("")+'</div>'+
         '<div class="hint-box">记得用上：'+hints+'</div>'+
         '<div class="feedback" id="open-fb"></div>'+
         '<div class="btn-row"><button type="button" class="btn btn-ghost" id="open-hint">看例句</button><button type="button" class="btn btn-primary" id="open-check">自检</button></div>'+
+        '<button type="button" class="btn btn-ghost btn-full" id="open-say" style="margin-top:10px">🔊 读我写的句子</button>'+
         '<button type="button" class="btn btn-green btn-full" id="open-done" style="display:none;margin-top:10px">完成造句</button></div>';
       Array.prototype.forEach.call(document.querySelectorAll("#wbank button"), function(b){
         b.onclick=function(){ var ta=document.getElementById("open-text"); ta.value=(ta.value?ta.value.replace(/\s+$/,"")+" ":"")+b.textContent; };
       });
+      var ownBtn=document.getElementById("open-say");
+      if(!tts.supported) ownBtn.style.display="none";
+      ownBtn.onclick=function(){ unlockTts(); var v=(document.getElementById("open-text").value||"").trim(); if(v) speak(v); else toast("先写一句再听～"); };
       document.getElementById("open-hint").onclick=function(){ document.getElementById("open-fb").className="feedback info"; document.getElementById("open-fb").textContent="参考："+ch.example; };
       document.getElementById("open-check").onclick=function(){
         var text=(document.getElementById("open-text").value||"").trim();
