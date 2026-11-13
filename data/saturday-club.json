@@ -1,0 +1,872 @@
+{
+  "version": 1,
+  "packId": "saturday-club",
+  "slots": 30,
+  "season": "KET",
+  "titleEn": "Saturday Club",
+  "titleZh": "周六俱乐部",
+  "introEn": "Weekend stories for young learners.",
+  "introZh": "写给小读者的周末英语短篇。",
+  "badge": "KET 季",
+  "source": {
+    "label": "A2 Key vocabulary list (August 2025)",
+    "url": "https://www.cambridgeenglish.org/images/506886-a2-key-2020-vocabulary-list.pdf"
+  },
+  "seriesNote": "KET 季计划约 30 篇（两个月，每两天一篇）。还没写好的故事会显示「即将推出」。",
+  "characters": [
+    {
+      "name": "Leo",
+      "pronoun": "he",
+      "blurbEn": "friends at school",
+      "blurbZh": "学校里的朋友"
+    },
+    {
+      "name": "Mia",
+      "pronoun": "she",
+      "blurbEn": "friends at school",
+      "blurbZh": "学校里的朋友"
+    },
+    {
+      "name": "Jay",
+      "pronoun": "he",
+      "blurbEn": "friends at school",
+      "blurbZh": "学校里的朋友"
+    }
+  ],
+  "recycled": [
+    {
+      "id": "fam-02",
+      "lemma": "get up",
+      "gloss": "起床",
+      "phonetic": "/ɡet ʌp/",
+      "collocations": [
+        "get up early",
+        "get up at seven"
+      ],
+      "surface": [
+        "gets up",
+        "get up"
+      ]
+    },
+    {
+      "id": "fam-03",
+      "lemma": "breakfast",
+      "gloss": "早餐",
+      "phonetic": "/ˈbrekfəst/",
+      "collocations": [
+        "have breakfast",
+        "eat breakfast"
+      ],
+      "surface": [
+        "breakfast"
+      ]
+    },
+    {
+      "id": "sch-02",
+      "lemma": "classroom",
+      "gloss": "教室",
+      "phonetic": "/ˈklɑːsruːm/",
+      "collocations": [
+        "in the classroom",
+        "a big classroom"
+      ],
+      "surface": [
+        "classroom"
+      ]
+    },
+    {
+      "id": "sch-09",
+      "lemma": "library",
+      "gloss": "图书馆",
+      "phonetic": "/ˈlaɪbrəri/",
+      "collocations": [
+        "school library",
+        "in the library"
+      ],
+      "surface": [
+        "library"
+      ]
+    },
+    {
+      "id": "sch-06",
+      "lemma": "friend",
+      "gloss": "朋友",
+      "phonetic": "/frend/",
+      "collocations": [
+        "best friend",
+        "make friends"
+      ],
+      "surface": [
+        "friends",
+        "friend"
+      ]
+    },
+    {
+      "id": "sch-11",
+      "lemma": "book",
+      "gloss": "书",
+      "phonetic": "/bʊk/",
+      "collocations": [
+        "read a book",
+        "English book"
+      ],
+      "surface": [
+        "books",
+        "book"
+      ]
+    },
+    {
+      "id": "sch-01",
+      "lemma": "teacher",
+      "gloss": "老师",
+      "phonetic": "/ˈtiːtʃə/",
+      "collocations": [
+        "my teacher",
+        "a kind teacher"
+      ],
+      "surface": [
+        "teachers",
+        "teacher"
+      ]
+    },
+    {
+      "id": "sch-10",
+      "lemma": "student",
+      "gloss": "学生",
+      "phonetic": "/ˈstjuːdnt/",
+      "collocations": [
+        "a good student",
+        "school student"
+      ],
+      "surface": [
+        "students",
+        "student"
+      ]
+    },
+    {
+      "id": "fam-12",
+      "lemma": "home",
+      "gloss": "家",
+      "phonetic": "/həʊm/",
+      "collocations": [
+        "at home",
+        "go home"
+      ],
+      "surface": [
+        "home"
+      ]
+    },
+    {
+      "id": "fam-15",
+      "lemma": "morning",
+      "gloss": "早上",
+      "phonetic": "/ˈmɔːnɪŋ/",
+      "collocations": [
+        "in the morning",
+        "good morning"
+      ],
+      "surface": [
+        "morning"
+      ]
+    },
+    {
+      "id": "phone",
+      "lemma": "phone",
+      "gloss": "电话；手机",
+      "phonetic": "/fəʊn/",
+      "collocations": [
+        "on his phone",
+        "my phone"
+      ],
+      "surface": [
+        "phone"
+      ],
+      "existingId": null
+    }
+  ],
+  "episodes": {
+    "1": {
+      "n": 1,
+      "titleEn": "The Message on the Board",
+      "titleZh": "黑板上的留言",
+      "petPreview": [],
+      "newChunkCount": 12,
+      "chunks": [
+        {
+          "id": "sc-w1-01",
+          "lemma": "look at",
+          "wordFamily": [
+            "look",
+            "looks",
+            "look at"
+          ],
+          "gloss": "看",
+          "phonetic": "/lʊk æt/",
+          "collocations": [
+            "look at the board",
+            "look at the gate"
+          ],
+          "sentenceFrame": "Look at the ___.",
+          "example": "Look at the board.",
+          "exampleZh": "看看黑板。",
+          "productionPrompt": "用 look at 写一句让别人看某物的话。",
+          "productionHint": [
+            "look at"
+          ],
+          "wordBank": [
+            "Look",
+            "at",
+            "the",
+            "board",
+            "gate"
+          ],
+          "stage": 0,
+          "surface": [
+            "looks at",
+            "look at"
+          ]
+        },
+        {
+          "id": "sc-w1-02",
+          "lemma": "message",
+          "wordFamily": [
+            "message",
+            "messages"
+          ],
+          "gloss": "留言；短信",
+          "phonetic": "/ˈmesɪdʒ/",
+          "collocations": [
+            "a short message",
+            "a text message"
+          ],
+          "sentenceFrame": "There is a ___ on the board.",
+          "example": "There is a short message on the board.",
+          "exampleZh": "黑板上有一条短留言。",
+          "productionPrompt": "用 message 写一句关于留言或短信的话。",
+          "productionHint": [
+            "message"
+          ],
+          "wordBank": [
+            "There",
+            "is",
+            "a",
+            "short",
+            "message",
+            "on",
+            "the",
+            "board"
+          ],
+          "stage": 0,
+          "surface": [
+            "messages",
+            "message"
+          ]
+        },
+        {
+          "id": "sc-w1-03",
+          "lemma": "board",
+          "wordFamily": [
+            "board"
+          ],
+          "gloss": "黑板",
+          "phonetic": "/bɔːd/",
+          "collocations": [
+            "on the board",
+            "look at the board"
+          ],
+          "sentenceFrame": "Look at the ___.",
+          "example": "Look at the board in our classroom.",
+          "exampleZh": "看看我们教室的黑板。",
+          "productionPrompt": "用 board 写一句关于黑板的话。",
+          "productionHint": [
+            "board"
+          ],
+          "wordBank": [
+            "Look",
+            "at",
+            "the",
+            "board",
+            "in",
+            "our",
+            "classroom"
+          ],
+          "stage": 0,
+          "surface": [
+            "board"
+          ]
+        },
+        {
+          "id": "sc-w1-04",
+          "lemma": "mean",
+          "wordFamily": [
+            "mean",
+            "means"
+          ],
+          "gloss": "意思是",
+          "phonetic": "/miːn/",
+          "collocations": [
+            "What does it mean?"
+          ],
+          "sentenceFrame": "What does it ___?",
+          "example": "What does it mean?",
+          "exampleZh": "这是什么意思？",
+          "productionPrompt": "用 mean 问一个词或一句话是什么意思。",
+          "productionHint": [
+            "mean"
+          ],
+          "wordBank": [
+            "What",
+            "does",
+            "it",
+            "mean"
+          ],
+          "stage": 0,
+          "surface": [
+            "means",
+            "mean"
+          ]
+        },
+        {
+          "id": "sc-w1-05",
+          "lemma": "meet",
+          "wordFamily": [
+            "meet",
+            "meets",
+            "met"
+          ],
+          "gloss": "见面",
+          "phonetic": "/miːt/",
+          "collocations": [
+            "meet at the school gate"
+          ],
+          "sentenceFrame": "Let's meet at ___.",
+          "example": "Leo meets Jay at the school gate.",
+          "exampleZh": "Leo 在学校门口遇见 Jay。",
+          "productionPrompt": "用 meet 写一句关于见面的话。",
+          "productionHint": [
+            "meet"
+          ],
+          "wordBank": [
+            "Let's",
+            "meet",
+            "at",
+            "the",
+            "school",
+            "gate"
+          ],
+          "stage": 0,
+          "surface": [
+            "meets",
+            "meet"
+          ]
+        },
+        {
+          "id": "sc-w1-06",
+          "lemma": "look for",
+          "wordFamily": [
+            "look",
+            "looks",
+            "look for"
+          ],
+          "gloss": "寻找",
+          "phonetic": "/lʊk fɔː/",
+          "collocations": [
+            "look for a book",
+            "look for a teacher"
+          ],
+          "sentenceFrame": "They look for a ___.",
+          "example": "They look for the blue book.",
+          "exampleZh": "他们寻找那本蓝书。",
+          "productionPrompt": "用 look for 写一句寻找某人或某物的话。",
+          "productionHint": [
+            "look for"
+          ],
+          "wordBank": [
+            "They",
+            "look",
+            "for",
+            "a",
+            "book",
+            "teacher"
+          ],
+          "stage": 0,
+          "surface": [
+            "looks for",
+            "look for"
+          ]
+        },
+        {
+          "id": "sc-w1-07",
+          "lemma": "notice",
+          "wordFamily": [
+            "notice",
+            "notices"
+          ],
+          "gloss": "告示（名词）",
+          "phonetic": "/ˈnəʊtɪs/",
+          "collocations": [
+            "a small notice"
+          ],
+          "sentenceFrame": "There is a small ___ on the gate.",
+          "example": "There is a small notice on the gate.",
+          "exampleZh": "门上有一张小告示。",
+          "productionPrompt": "用 notice 写一句关于告示的话。",
+          "productionHint": [
+            "notice"
+          ],
+          "wordBank": [
+            "There",
+            "is",
+            "a",
+            "small",
+            "notice",
+            "on",
+            "the",
+            "gate"
+          ],
+          "stage": 0,
+          "surface": [
+            "notices",
+            "notice"
+          ]
+        },
+        {
+          "id": "sc-w1-08",
+          "lemma": "find out",
+          "wordFamily": [
+            "find",
+            "finds",
+            "find out"
+          ],
+          "gloss": "弄清楚",
+          "phonetic": "/faɪnd aʊt/",
+          "collocations": [
+            "find out more",
+            "find out who it is"
+          ],
+          "sentenceFrame": "I want to find out ___.",
+          "example": "I want to find out who it is.",
+          "exampleZh": "我想弄清楚这是谁。",
+          "productionPrompt": "用 find out 写一句想弄清楚某事的话。",
+          "productionHint": [
+            "find out"
+          ],
+          "wordBank": [
+            "I",
+            "want",
+            "to",
+            "find",
+            "out",
+            "more"
+          ],
+          "stage": 0,
+          "surface": [
+            "finds out",
+            "find out"
+          ]
+        },
+        {
+          "id": "sc-w1-09",
+          "lemma": "join",
+          "wordFamily": [
+            "join",
+            "joins"
+          ],
+          "gloss": "加入",
+          "phonetic": "/dʒɔɪn/",
+          "collocations": [
+            "join the club"
+          ],
+          "sentenceFrame": "I want to join the ___.",
+          "example": "I want to join the club.",
+          "exampleZh": "我想加入这个俱乐部。",
+          "productionPrompt": "用 join 写一句想加入某团体的话。",
+          "productionHint": [
+            "join"
+          ],
+          "wordBank": [
+            "I",
+            "want",
+            "to",
+            "join",
+            "the",
+            "club"
+          ],
+          "stage": 0,
+          "surface": [
+            "joins",
+            "join"
+          ]
+        },
+        {
+          "id": "sc-w1-10",
+          "lemma": "club",
+          "wordFamily": [
+            "club",
+            "clubs"
+          ],
+          "gloss": "俱乐部",
+          "phonetic": "/klʌb/",
+          "collocations": [
+            "the Saturday Club",
+            "join the club"
+          ],
+          "sentenceFrame": "I want to join the ___.",
+          "example": "Join the Saturday Club.",
+          "exampleZh": "加入周六俱乐部。",
+          "productionPrompt": "用 club 写一句关于俱乐部的话。",
+          "productionHint": [
+            "club"
+          ],
+          "wordBank": [
+            "I",
+            "want",
+            "to",
+            "join",
+            "the",
+            "Saturday",
+            "Club"
+          ],
+          "stage": 0,
+          "surface": [
+            "clubs",
+            "club"
+          ]
+        },
+        {
+          "id": "sc-w1-11",
+          "lemma": "strange",
+          "wordFamily": [
+            "strange"
+          ],
+          "gloss": "奇怪的",
+          "phonetic": "/streɪndʒ/",
+          "collocations": [
+            "That's strange"
+          ],
+          "sentenceFrame": "That's ___.",
+          "example": "That's strange.",
+          "exampleZh": "真奇怪。",
+          "productionPrompt": "用 strange 写一句觉得某事奇怪的话。",
+          "productionHint": [
+            "strange"
+          ],
+          "wordBank": [
+            "That's",
+            "strange"
+          ],
+          "stage": 0,
+          "surface": [
+            "strange"
+          ]
+        },
+        {
+          "id": "sc-w1-12",
+          "lemma": "interesting",
+          "wordFamily": [
+            "interest",
+            "interesting"
+          ],
+          "gloss": "有意思的",
+          "phonetic": "/ˈɪntrəstɪŋ/",
+          "collocations": [
+            "This is interesting"
+          ],
+          "sentenceFrame": "This is ___.",
+          "example": "This is interesting.",
+          "exampleZh": "这很有意思。",
+          "productionPrompt": "用 interesting 写一句觉得某事有意思的话。",
+          "productionHint": [
+            "interesting"
+          ],
+          "wordBank": [
+            "This",
+            "is",
+            "interesting"
+          ],
+          "stage": 0,
+          "surface": [
+            "interesting"
+          ]
+        }
+      ],
+      "scenes": [
+        {
+          "id": 1,
+          "title": "A text message",
+          "sentences": [
+            {
+              "en": "It is Saturday morning.",
+              "zh": "现在是周六早上。"
+            },
+            {
+              "en": "Leo gets up and has breakfast at home.",
+              "zh": "Leo 起床后在家吃早餐。"
+            },
+            {
+              "en": "There is a text message from Mia on his phone.",
+              "zh": "他的手机上有一条 Mia 发来的短信。"
+            },
+            {
+              "en": "The message says: \"Look at the board in our classroom.\"",
+              "zh": "短信写着：“看看我们教室的黑板。”"
+            },
+            {
+              "en": "\"That's strange,\" Leo thinks.",
+              "zh": "“真奇怪，”Leo 想。"
+            },
+            {
+              "en": "\"What does it mean?\"",
+              "zh": "“这是什么意思？”"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "At the school gate",
+          "sentences": [
+            {
+              "en": "Leo meets Jay at the school gate.",
+              "zh": "Leo 在学校门口遇见 Jay。"
+            },
+            {
+              "en": "\"Mia says we need to look at the board,\" Leo says.",
+              "zh": "“Mia 说我们得去看看黑板，”Leo 说。"
+            },
+            {
+              "en": "\"OK, let's go to the classroom,\" Jay says.",
+              "zh": "“好，我们去教室吧，”Jay 说。"
+            },
+            {
+              "en": "They go together.",
+              "zh": "他们一起走了。"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "On the board",
+          "sentences": [
+            {
+              "en": "Mia is in the classroom.",
+              "zh": "Mia 在教室里。"
+            },
+            {
+              "en": "The friends look at the board.",
+              "zh": "三个朋友看着黑板。"
+            },
+            {
+              "en": "There is a short message on the board. It says: \"Meet at the school gate at ten. Join the Saturday Club.\"",
+              "zh": "黑板上有一条短留言，写着：“十点在学校门口见面。加入周六俱乐部。”"
+            },
+            {
+              "en": "\"This is interesting,\" Mia says.",
+              "zh": "“这很有意思，”Mia 说。"
+            },
+            {
+              "en": "\"Who is this message from?\" Jay asks.",
+              "zh": "“这条留言是谁发的？”Jay 问。"
+            },
+            {
+              "en": "\"I want to find out who it is,\" Leo says.",
+              "zh": "“我想弄清楚这是谁，”Leo 说。"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "A small notice",
+          "sentences": [
+            {
+              "en": "At ten o'clock, they meet at the school gate.",
+              "zh": "十点，他们在学校门口见面。"
+            },
+            {
+              "en": "They look for a teacher or a student, but they do not see anyone new.",
+              "zh": "他们在找老师或同学，但没有看到任何新来的人。"
+            },
+            {
+              "en": "Then Mia looks at the gate.",
+              "zh": "后来 Mia 看了看大门。"
+            },
+            {
+              "en": "There is a small notice on the gate. The notice says: \"Look for a blue book in the library. The name of the book is Saturday Club.\"",
+              "zh": "门上有一张小告示，写着：“去图书馆找一本蓝色的书。书名是 Saturday Club。”"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "In the library",
+          "sentences": [
+            {
+              "en": "The friends go to the library.",
+              "zh": "朋友们去图书馆。"
+            },
+            {
+              "en": "They look for the blue book.",
+              "zh": "他们寻找那本蓝书。"
+            },
+            {
+              "en": "Leo finds it next to a window.",
+              "zh": "Leo 在一扇窗户旁边找到了它。"
+            },
+            {
+              "en": "Inside the book, there is a short letter. The letter says: \"Welcome to the Saturday Club. Come back next Saturday. Then you can find out more.\"",
+              "zh": "书里有一封短信，写着：“欢迎来到周六俱乐部。下周六再来。那时你们就能知道更多。”"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "title": "Let's join",
+          "sentences": [
+            {
+              "en": "The friends sit together and read the letter again.",
+              "zh": "朋友们坐在一起，又读了一遍那封信。"
+            },
+            {
+              "en": "\"This is a strange and interesting day,\" Mia says.",
+              "zh": "“今天真奇怪，也很有意思，”Mia 说。"
+            },
+            {
+              "en": "\"I want to join the club,\" Jay says.",
+              "zh": "“我想加入这个俱乐部，”Jay 说。"
+            },
+            {
+              "en": "\"Me too,\" Leo says.",
+              "zh": "“我也是，”Leo 说。"
+            },
+            {
+              "en": "\"Let's come back next Saturday. We can find out together.\"",
+              "zh": "“我们下周六再来吧。我们可以一起弄清楚。”"
+            },
+            {
+              "en": "On the next page of the book, there is one more message: \"See you next Saturday. Then you can find out my name.\"",
+              "zh": "在书的下一页，还有一条留言：“下周六见。到时你们就能知道我的名字。”"
+            }
+          ]
+        }
+      ],
+      "questions": [
+        {
+          "q": "Who is in the story?",
+          "qZh": "故事里有谁？",
+          "model": "Leo, Mia and Jay.",
+          "modelZh": "Leo、Mia 和 Jay。"
+        },
+        {
+          "q": "Where do they go?",
+          "qZh": "他们去了哪里？",
+          "model": "They go to the classroom, the school gate and the library.",
+          "modelZh": "他们去了教室、学校门口和图书馆。"
+        },
+        {
+          "q": "What do they find, and what do they want to do next Saturday?",
+          "qZh": "他们找到了什么？下周六想做什么？",
+          "model": "They find a blue book about the Saturday Club. They want to come back next Saturday and find out more.",
+          "modelZh": "他们找到一本关于周六俱乐部的蓝书。他们想下周六再来，弄清楚更多事情。"
+        }
+      ],
+      "retell": [
+        {
+          "key": "who",
+          "label": "谁",
+          "hint": "可以说出 Leo、Mia、Jay，或写下他们的名字。"
+        },
+        {
+          "key": "where",
+          "label": "在哪",
+          "hint": "可以说家、学校门口、教室、图书馆。"
+        },
+        {
+          "key": "what",
+          "label": "发生了什么",
+          "hint": "可以用关键词，比如 message、board、club、blue book。"
+        }
+      ],
+      "practice": [
+        {
+          "id": "p1",
+          "target": "Look at the board.",
+          "wordBank": [
+            "Look",
+            "at",
+            "the",
+            "board",
+            "gate",
+            "message"
+          ]
+        },
+        {
+          "id": "p2",
+          "target": "What does this message mean?",
+          "wordBank": [
+            "What",
+            "does",
+            "this",
+            "message",
+            "mean",
+            "it",
+            "board"
+          ]
+        },
+        {
+          "id": "p3",
+          "target": "Let's meet at the school gate.",
+          "wordBank": [
+            "Let's",
+            "meet",
+            "at",
+            "the",
+            "school",
+            "gate",
+            "club",
+            "board"
+          ]
+        },
+        {
+          "id": "p4",
+          "target": "I want to join the club.",
+          "wordBank": [
+            "I",
+            "want",
+            "to",
+            "join",
+            "the",
+            "club",
+            "look",
+            "find"
+          ]
+        },
+        {
+          "id": "p5",
+          "target": "We want to find out.",
+          "wordBank": [
+            "We",
+            "want",
+            "to",
+            "find",
+            "out",
+            "look",
+            "more"
+          ]
+        }
+      ],
+      "practicePreferIds": [
+        "sc-w1-01",
+        "sc-w1-02",
+        "sc-w1-04",
+        "sc-w1-05",
+        "sc-w1-09",
+        "sc-w1-08",
+        "sc-w1-03",
+        "sc-w1-06",
+        "sc-w1-07",
+        "sc-w1-10",
+        "sc-w1-11",
+        "sc-w1-12"
+      ]
+    }
+  }
+}

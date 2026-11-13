@@ -601,7 +601,8 @@
           stage0PassedAt: earlierDate(ls.stage0PassedAt, cs.stage0PassedAt),
           litCelebrated: lit,
           allLitCelebrated: !!(ls.allLitCelebrated || cs.allLitCelebrated),
-          _litSeeded: true
+          _litSeeded: true,
+          club: mergeClub(ls.club, cs.club)
         },
         logs: (local.logs || []).concat(cloud.logs || []).slice(0, 120),
         tts: tts,
@@ -609,6 +610,31 @@
       };
     }
   };
+
+  function mergeClub(a, b) {
+    a = a || { episodes: {} };
+    b = b || { episodes: {} };
+    var out = { episodes: {} };
+    var ids = {};
+    Object.keys(a.episodes || {}).forEach(function (k) { ids[k] = 1; });
+    Object.keys(b.episodes || {}).forEach(function (k) { ids[k] = 1; });
+    Object.keys(ids).forEach(function (k) {
+      var x = (a.episodes && a.episodes[k]) || {};
+      var y = (b.episodes && b.episodes[k]) || {};
+      var fa = x.finishedAt || null, fb = y.finishedAt || null;
+      var dates = [];
+      (x.coverLearnDates || []).concat(y.coverLearnDates || []).forEach(function (d) {
+        if (d && dates.indexOf(d) === -1) dates.push(d);
+      });
+      dates.sort();
+      out.episodes[k] = {
+        finished: !!(x.finished || y.finished || fa || fb),
+        finishedAt: !fa ? fb : (!fb ? fa : (fa < fb ? fa : fb)),
+        coverLearnDates: dates
+      };
+    });
+    return out;
+  }
 
   function mergeCard(a, b) {
     if (!a) return Object.assign({}, b);
