@@ -1,8 +1,8 @@
 {
-  "version": 1,
+  "version": 2,
   "packId": "saturday-club-w1",
-  "titleEn": "Saturday Club — Weekend 1: The Message on the Board",
-  "titleZh": "周六俱乐部·第1篇《黑板上的留言》",
+  "titleEn": "Saturday Club",
+  "titleZh": "周六俱乐部",
   "storageKey": "sc_test_w1",
   "source": {
     "label": "A2 Key vocabulary list (August 2025)",
@@ -157,8 +157,8 @@
         "meet at the school gate"
       ],
       "sentenceFrame": "Let's meet at ___.",
-      "example": "Lin meets Jun at the school gate.",
-      "exampleZh": "林在学校门口遇见军。",
+      "example": "Leo meets Jay at the school gate.",
+      "exampleZh": "Leo 在学校门口遇见 Jay。",
       "productionPrompt": "用 meet 写一句关于见面的话。",
       "productionHint": [
         "meet"
@@ -259,11 +259,11 @@
       "phonetic": "/faɪnd aʊt/",
       "collocations": [
         "find out more",
-        "find out my name"
+        "find out who it is"
       ],
       "sentenceFrame": "I want to find out ___.",
-      "example": "I want to find out.",
-      "exampleZh": "我想弄清楚。",
+      "example": "I want to find out who it is.",
+      "exampleZh": "我想弄清楚这是谁。",
       "productionPrompt": "用 find out 写一句想弄清楚某事的话。",
       "productionHint": [
         "find out"
@@ -568,20 +568,20 @@
           "zh": "现在是周六早上。"
         },
         {
-          "en": "Lin gets up and has breakfast at home.",
-          "zh": "林起床后在家吃早餐。"
+          "en": "Leo gets up and has breakfast at home.",
+          "zh": "Leo 起床后在家吃早餐。"
         },
         {
-          "en": "There is a text message from Mei on his phone.",
-          "zh": "他的手机上有一条梅发来的短信。"
+          "en": "There is a text message from Mia on his phone.",
+          "zh": "他的手机上有一条 Mia 发来的短信。"
         },
         {
           "en": "The message says: \"Look at the board in our classroom.\"",
           "zh": "短信写着：“看看我们教室的黑板。”"
         },
         {
-          "en": "\"That's strange,\" Lin thinks.",
-          "zh": "“真奇怪，”林想。"
+          "en": "\"That's strange,\" Leo thinks.",
+          "zh": "“真奇怪，”Leo 想。"
         },
         {
           "en": "\"What does it mean?\"",
@@ -594,16 +594,16 @@
       "title": "At the school gate",
       "sentences": [
         {
-          "en": "Lin meets Jun at the school gate.",
-          "zh": "林在学校门口遇见军。"
+          "en": "Leo meets Jay at the school gate.",
+          "zh": "Leo 在学校门口遇见 Jay。"
         },
         {
-          "en": "\"Mei says we need to look at the board,\" Lin says.",
-          "zh": "“梅说我们得去看看黑板，”林说。"
+          "en": "\"Mia says we need to look at the board,\" Leo says.",
+          "zh": "“Mia 说我们得去看看黑板，”Leo 说。"
         },
         {
-          "en": "\"OK, let's go to the classroom,\" Jun says.",
-          "zh": "“好，我们去教室吧，”军说。"
+          "en": "\"OK, let's go to the classroom,\" Jay says.",
+          "zh": "“好，我们去教室吧，”Jay 说。"
         },
         {
           "en": "They go together.",
@@ -616,8 +616,8 @@
       "title": "On the board",
       "sentences": [
         {
-          "en": "Mei is in the classroom.",
-          "zh": "梅在教室里。"
+          "en": "Mia is in the classroom.",
+          "zh": "Mia 在教室里。"
         },
         {
           "en": "The friends look at the board.",
@@ -628,16 +628,16 @@
           "zh": "黑板上有一条短留言，写着：“十点在学校门口见面。加入周六俱乐部。”"
         },
         {
-          "en": "\"This is interesting,\" Mei says.",
-          "zh": "“这很有意思，”梅说。"
+          "en": "\"This is interesting,\" Mia says.",
+          "zh": "“这很有意思，”Mia 说。"
         },
         {
-          "en": "\"Who is this message from?\" Jun asks.",
-          "zh": "“这条留言是谁发的？”军问。"
+          "en": "\"Who is this message from?\" Jay asks.",
+          "zh": "“这条留言是谁发的？”Jay 问。"
         },
         {
-          "en": "\"I want to find out,\" Lin says.",
-          "zh": "“我想弄清楚，”林说。"
+          "en": "\"I want to find out who it is,\" Leo says.",
+          "zh": "“我想弄清楚这是谁，”Leo 说。"
         }
       ]
     },
@@ -650,12 +650,12 @@
           "zh": "十点，他们在学校门口见面。"
         },
         {
-          "en": "They look for a teacher or a student, but they do not see a new person.",
-          "zh": "他们寻找老师或同学，但没有看到新的人。"
+          "en": "They look for a teacher or a student, but they do not see anyone new.",
+          "zh": "他们在找老师或同学，但没有看到任何新来的人。"
         },
         {
-          "en": "Then Mei looks at the gate.",
-          "zh": "后来梅看了看大门。"
+          "en": "Then Mia looks at the gate.",
+          "zh": "后来 Mia 看了看大门。"
         },
         {
           "en": "There is a small notice on the gate. The notice says: \"Look for a blue book in the library. The name of the book is Saturday Club.\"",
@@ -676,8 +676,8 @@
           "zh": "他们寻找那本蓝书。"
         },
         {
-          "en": "Lin finds it next to a window.",
-          "zh": "林在一扇窗户旁边找到了它。"
+          "en": "Leo finds it next to a window.",
+          "zh": "Leo 在一扇窗户旁边找到了它。"
         },
         {
           "en": "Inside the book, there is a short letter. The letter says: \"Welcome to the Saturday Club. Come back next Saturday. Then you can find out more.\"",
@@ -694,16 +694,16 @@
           "zh": "朋友们坐在一起，又读了一遍那封信。"
         },
         {
-          "en": "\"This is a strange and interesting day,\" Mei says.",
-          "zh": "“今天真奇怪，也很有意思，”梅说。"
+          "en": "\"This is a strange and interesting day,\" Mia says.",
+          "zh": "“今天真奇怪，也很有意思，”Mia 说。"
         },
         {
-          "en": "\"I want to join the club,\" Jun says.",
-          "zh": "“我想加入这个俱乐部，”军说。"
+          "en": "\"I want to join the club,\" Jay says.",
+          "zh": "“我想加入这个俱乐部，”Jay 说。"
         },
         {
-          "en": "\"Me too,\" Lin says.",
-          "zh": "“我也是，”林说。"
+          "en": "\"Me too,\" Leo says.",
+          "zh": "“我也是，”Leo 说。"
         },
         {
           "en": "\"Let's come back next Saturday. We can find out together.\"",
@@ -720,8 +720,8 @@
     {
       "q": "Who is in the story?",
       "qZh": "故事里有谁？",
-      "model": "Lin, Mei and Jun.",
-      "modelZh": "林、梅和军。"
+      "model": "Leo, Mia and Jay.",
+      "modelZh": "Leo、Mia 和 Jay。"
     },
     {
       "q": "Where do they go?",
@@ -740,7 +740,7 @@
     {
       "key": "who",
       "label": "谁",
-      "hint": "可以说出林、梅、军，或写下他们的名字。"
+      "hint": "可以说出 Leo、Mia、Jay，或写下他们的名字。"
     },
     {
       "key": "where",
@@ -820,5 +820,42 @@
         "more"
       ]
     }
-  ]
+  ],
+  "episodeTitleEn": "Weekend 1: The Message on the Board",
+  "episodeTitleZh": "第1篇《黑板上的留言》",
+  "hub": {
+    "titleEn": "Saturday Club",
+    "titleZh": "周六俱乐部",
+    "introEn": "Weekend stories for young learners.",
+    "introZh": "写给小读者的周末英语短篇。",
+    "previewLabel": "试读预览",
+    "characters": [
+      {
+        "name": "Leo",
+        "pronoun": "he",
+        "blurbEn": "friends at school",
+        "blurbZh": "学校里的朋友"
+      },
+      {
+        "name": "Mia",
+        "pronoun": "she",
+        "blurbEn": "friends at school",
+        "blurbZh": "学校里的朋友"
+      },
+      {
+        "name": "Jay",
+        "pronoun": "he",
+        "blurbEn": "friends at school",
+        "blurbZh": "学校里的朋友"
+      }
+    ],
+    "currentWeekend": {
+      "n": 1,
+      "titleEn": "The Message on the Board",
+      "titleZh": "黑板上的留言"
+    },
+    "lockedFrom": 2,
+    "lockedTo": 8,
+    "seriesNote": "系列计划约 8–12 个周末故事，目前先列出到 Weekend 8。"
+  }
 }

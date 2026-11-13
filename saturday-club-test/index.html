@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
-  <meta name="description" content="周六俱乐部第1篇试读页（测试，不列入搜索）" />
-  <title>Saturday Club — Weekend 1: The Message on the Board（周六俱乐部·第1篇《黑板上的留言》）</title>
+  <meta name="description" content="周六俱乐部试读预览（测试，不列入搜索）" />
+  <title>Saturday Club / 周六俱乐部（试读预览）</title>
   <style>
     :root {
       --bg:#f4f6fb; --card:#fff; --text:#1a2233; --muted:#8a94a6;
@@ -49,7 +49,7 @@
     }
     .sent:hover, .sent:focus { background:var(--bg); outline:none }
     .sent.open { background:var(--bg) }
-    .sent-en { font-size:17px; line-height:1.8; color:var(--text) }
+    .sent-en { font-size:18px; line-height:1.8; color:var(--text) }
     .sent-zh { display:none; font-size:13px; color:var(--muted); line-height:1.6; margin-top:4px }
     .sent.open .sent-zh { display:block }
     .chunk {
@@ -152,19 +152,65 @@
     }
     footer a { color:var(--primary); text-decoration:none }
     footer a:hover { text-decoration:underline }
+
+    .top { position:relative }
+    .top.story-top {
+      display:flex; align-items:flex-start; gap:10px;
+      padding:16px 16px 20px;
+    }
+    .story-head { flex:1; min-width:0 }
+    .back {
+      flex:0 0 auto; margin-top:2px;
+      display:inline-flex; align-items:center; gap:2px;
+      border:none; border-radius:12px; background:rgba(255,255,255,.22);
+      color:#fff; font-family:inherit; font-size:13px; font-weight:600;
+      padding:8px 10px; cursor:pointer; line-height:1;
+    }
+    .back:active { opacity:.9; transform:scale(.98) }
+    .preview-pill {
+      display:inline-block; font-size:11px; font-weight:700; letter-spacing:.02em;
+      background:rgba(255,255,255,.22); border-radius:999px; padding:3px 8px; margin-bottom:8px;
+    }
+    .top .title-en { font-size:22px; font-weight:700; margin:0 }
+    .top .title-zh { font-size:16px; font-weight:700; opacity:.95; margin:2px 0 8px }
+    .intro { margin-top:6px }
+    .intro .en { font-size:13px; font-weight:600; opacity:.96 }
+    .intro .zh { font-size:12px; opacity:.88; margin-top:2px }
+    .chars { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px }
+    .char {
+      background:var(--bg); border-radius:14px; padding:12px 6px; text-align:center;
+    }
+    .char .initial {
+      width:40px; height:40px; margin:0 auto 8px; border-radius:50%;
+      background:var(--primary-soft); color:var(--primary);
+      font-weight:800; font-size:16px; display:flex; align-items:center; justify-content:center;
+    }
+    .char .name { font-weight:700; font-size:15px }
+    .char .pro { font-size:11px; color:var(--muted); margin-top:1px }
+    .char .blurb { font-size:11px; color:var(--muted); margin-top:6px; line-height:1.4 }
+    .week-now {
+      border:1.5px solid var(--primary); background:#fff; border-radius:16px; padding:14px;
+    }
+    .week-now .wk { font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px }
+    .week-now h3 { font-size:16px; margin:0 0 2px; line-height:1.35 }
+    .week-now .zh { font-size:13px; color:var(--muted); margin-bottom:12px }
+    .week-locked {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:11px 12px; border:1.5px solid var(--border); border-radius:12px;
+      color:var(--muted); margin-top:8px; background:#fff; font-size:13px;
+    }
+    .week-locked .soon {
+      font-size:11px; font-weight:700; background:var(--bg); border-radius:999px; padding:3px 8px;
+    }
+    .series-note { font-size:12px; color:var(--muted); margin-top:10px; line-height:1.5 }
     [hidden] { display:none !important }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header class="top">
-      <div class="hi">英语小步走 · 试读</div>
-      <h1>周六俱乐部</h1>
-      <p class="sub">第1篇《黑板上的留言》</p>
-      <p class="sub-en">Weekend 1: The Message on the Board</p>
-    </header>
+    <header class="top" id="header"></header>
     <div id="main">
-      <div class="notice">正在打开故事…</div>
+      <div class="notice">正在打开…</div>
     </div>
     <footer>
       词表来源（官方 PDF，本页不提供完整词表）：

@@ -6,9 +6,11 @@
   var lex = {};
   var matchers = [];
   var tts = { supported: false, voice: null, unlocked: false };
+  var syncingHash = false;
 
   var state = {
-    view: "scene",
+    view: "hub",
+    inAfter: false,
     scene: 0,
     openZh: {},
     afterStep: "questions",
@@ -23,13 +25,17 @@
 
   function $(id) { return document.getElementById(id); }
 
+  function isStoryHash() {
+    var h = (location.hash || "").replace(/^#/, "").toLowerCase();
+    return h === "story" || h === "w1" || h === "weekend-1";
+  }
+
   function loadState() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       var s = JSON.parse(raw);
       if (s && typeof s === "object") {
-        if (s.view) state.view = s.view;
         if (typeof s.scene === "number") state.scene = s.scene;
         if (s.afterStep) state.afterStep = s.afterStep;
         if (typeof s.qIndex === "number") state.qIndex = s.qIndex;
@@ -37,6 +43,7 @@
         if (s.retell) state.retell = s.retell;
         if (s.practiceDone) state.practiceDone = s.practiceDone;
         if (s.finished) state.finished = s.finished;
+        if (s.inAfter) state.inAfter = true;
       }
     } catch (e) {}
   }
@@ -44,14 +51,14 @@
   function saveState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        view: state.view,
         scene: state.scene,
         afterStep: state.afterStep,
         qIndex: state.qIndex,
         answers: state.answers,
         retell: state.retell,
         practiceDone: state.practiceDone,
-        finished: state.finished
+        finished: state.finished,
+        inAfter: state.view === "after" || (state.view !== "hub" && state.inAfter)
       }));
     } catch (e) {}
   }
@@ -197,13 +204,85 @@
       '<button type="button" class="btn btn-ghost btn-full" id="pop-close">关闭</button>';
   }
 
-  function dotsHtml(activeCount, current) {
+  function dotsHtml(current) {
     var html = '<div class="dots" aria-hidden="true">';
     for (var i = 0; i < 6; i++) {
-      html += '<span class="dot' + (i === current ? " on" : "") + (i < activeCount || i === current ? "" : "") + '"></span>';
+      html += '<span class="dot' + (i === current ? " on" : "") + '"></span>';
     }
     html += "</div>";
     return html;
+  }
+
+  function hubMeta() {
+    return data.hub || {};
+  }
+
+  function renderHeader() {
+    var el = $("header");
+    if (!el) return;
+    var hub = hubMeta();
+    if (state.view === "hub") {
+      el.className = "top";
+      el.innerHTML =
+        '<div class="preview-pill">' + esc(hub.previewLabel || "试读预览") + "</div>" +
+        '<h1 class="title-en">' + esc(hub.titleEn || "Saturday Club") + "</h1>" +
+        '<div class="title-zh">' + esc(hub.titleZh || "周六俱乐部") + "</div>" +
+        '<div class="intro">' +
+          '<div class="en">' + esc(hub.introEn || "") + "</div>" +
+          '<div class="zh">' + esc(hub.introZh || "") + "</div>" +
+        "</div>";
+      document.title = "Saturday Club / 周六俱乐部（试读预览）";
+    } else {
+      el.className = "top story-top";
+      el.innerHTML =
+        '<button type="button" class="back" id="btn-back" aria-label="返回封面">← 返回</button>' +
+        '<div class="story-head">' +
+          '<div class="hi">' + esc(hub.previewLabel || "试读预览") + "</div>" +
+          "<h1>周六俱乐部</h1>" +
+          '<p class="sub">Weekend 1 · The Message on the Board</p>' +
+          '<p class="sub-en">《黑板上的留言》</p>' +
+        "</div>";
+      document.title = "Weekend 1: The Message on the Board · Saturday Club";
+    }
+  }
+
+  function renderHub() {
+    var hub = hubMeta();
+    var chars = (hub.characters || []).map(function (c) {
+      return '<div class="char">' +
+        '<div class="initial">' + esc((c.name || "?").charAt(0)) + "</div>" +
+        '<div class="name">' + esc(c.name) + "</div>" +
+        '<div class="pro">(' + esc(c.pronoun) + ")</div>" +
+        '<div class="blurb">' + esc(c.blurbEn) + "<br>" + esc(c.blurbZh) + "</div>" +
+      "</div>";
+    }).join("");
+    var cur = hub.currentWeekend || { n: 1, titleEn: "The Message on the Board", titleZh: "黑板上的留言" };
+    var locked = "";
+    var from = hub.lockedFrom || 2;
+    var to = hub.lockedTo || 8;
+    var i;
+    for (i = from; i <= to; i++) {
+      locked += '<div class="week-locked"><span>Weekend ' + i + '</span><span class="soon">即将推出</span></div>';
+    }
+    $("main").innerHTML =
+      '<div class="card-block">' +
+        '<div class="label">三位同学</div>' +
+        '<div class="chars">' + chars + "</div>" +
+      "</div>" +
+      '<div class="card-block">' +
+        '<div class="label">本周故事</div>' +
+        '<div class="week-now">' +
+          '<div class="wk">Weekend ' + cur.n + "</div>" +
+          "<h3 lang=\"en\">" + esc(cur.titleEn) + "</h3>" +
+          '<div class="zh">《' + esc(cur.titleZh) + "》</div>" +
+          '<button type="button" class="btn btn-primary btn-full" id="btn-start">开始阅读</button>' +
+        "</div>" +
+      "</div>" +
+      '<div class="card-block">' +
+        '<div class="label">即将推出</div>' +
+        locked +
+        '<p class="series-note">' + esc(hub.seriesNote || "") + "</p>" +
+      "</div>";
   }
 
   function renderScene() {
@@ -220,7 +299,7 @@
     $("main").innerHTML =
       '<div class="notice">这是测试页，主站还没合进这篇故事。可选阅读，不计入打卡。</div>' +
       '<div class="card-block">' +
-        dotsHtml(n, state.scene) +
+        dotsHtml(state.scene) +
         '<div class="label">第 ' + n + " / 6 场</div>" +
         "<h2 class=\"scene-title\">" + esc(scene.title) + "</h2>" +
         (n === 1 ? '<p class="hint-line">点句子看中文；点彩色词看意思和发音。</p>' : "") +
@@ -340,19 +419,23 @@
   function renderDone() {
     state.finished = true;
     state.afterStep = "done";
+    state.inAfter = true;
     saveState();
     $("main").innerHTML =
       '<div class="card-block end-card">' +
         "<h2>读完啦 🎉</h2>" +
-        '<p class="hint-line">你读完了《黑板上的留言》。林、梅和军下周六还会再来。</p>' +
+        '<p class="hint-line">你读完了《黑板上的留言》。Leo、Mia 和 Jay 下周六还会再来。</p>' +
         '<div class="end-note">合进主站后，读完故事会算当天新学完成，造句会跳到现有造句任务；本测试页先独立体验。</div>' +
         '<button type="button" class="btn btn-primary btn-full" id="btn-reread" style="margin-top:14px">再读一遍</button>' +
+        '<button type="button" class="btn btn-ghost btn-full" id="btn-back-done" style="margin-top:8px">返回封面</button>' +
       "</div>";
   }
 
   function render() {
     closePopover();
-    if (state.view === "scene") renderScene();
+    renderHeader();
+    if (state.view === "hub") renderHub();
+    else if (state.view === "scene") renderScene();
     else if (state.afterStep === "questions") renderQuestions();
     else if (state.afterStep === "retell") renderRetell();
     else if (state.afterStep === "done") renderDone();
@@ -360,8 +443,57 @@
     saveState();
   }
 
+  function enterStory() {
+    if (state.finished) {
+      state.view = "scene";
+      state.scene = 0;
+      state.openZh = {};
+      state.afterStep = "questions";
+      state.qIndex = 0;
+      state.qRevealed = false;
+      state.finished = false;
+      state.inAfter = false;
+      state.practiceId = null;
+    } else if (state.inAfter) {
+      state.view = "after";
+    } else {
+      state.view = "scene";
+    }
+  }
+
+  function goHub() {
+    state.view = "hub";
+    state.inAfter = state.inAfter || false;
+    closePopover();
+    syncingHash = true;
+    if (history.replaceState) {
+      history.replaceState(null, "", location.pathname + location.search);
+    } else {
+      location.hash = "";
+    }
+    syncingHash = false;
+    render();
+  }
+
+  function goStory() {
+    enterStory();
+    if (!isStoryHash()) {
+      syncingHash = true;
+      location.hash = "story";
+      syncingHash = false;
+    }
+    render();
+  }
+
+  function onHash() {
+    if (syncingHash) return;
+    if (isStoryHash()) goStory();
+    else goHub();
+  }
+
   function goAfter(step) {
     state.view = "after";
+    state.inAfter = true;
     state.afterStep = step;
     if (step === "questions") { state.qIndex = 0; state.qRevealed = false; }
     render();
@@ -387,6 +519,9 @@
       return;
     }
     if (t.id === "pop-close" || t.id === "pop-mask") { closePopover(); return; }
+
+    if (t.id === "btn-back" || t.id === "btn-back-done") { goHub(); return; }
+    if (t.id === "btn-start") { goStory(); return; }
 
     if (t.classList.contains("sent")) {
       var si = +t.getAttribute("data-si");
@@ -431,7 +566,7 @@
       render();
       return;
     }
-    if (t.closest && t.closest("#wbank") && t.getAttribute("data-w")) {
+    if (t.getAttribute && t.getAttribute("data-w") && t.closest && t.closest("#wbank")) {
       var box = $("p-text");
       if (box) {
         var cur = box.value.replace(/\s+$/, "");
@@ -491,6 +626,8 @@
       state.qIndex = 0;
       state.qRevealed = false;
       state.finished = false;
+      state.inAfter = false;
+      state.practiceId = null;
       render();
     }
   }
@@ -522,6 +659,12 @@
     initTts();
     document.body.addEventListener("click", onClick);
     document.body.addEventListener("keydown", onKey);
+    window.addEventListener("hashchange", onHash);
+    if (isStoryHash()) {
+      enterStory();
+    } else {
+      state.view = "hub";
+    }
     render();
   }
 
