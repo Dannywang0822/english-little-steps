@@ -223,8 +223,8 @@ check("skip paths still exist for questions and retell", clubSrc.includes('id ==
 check("reader uses Asia/Shanghai dates", clubSrc.includes('timeZone: "Asia/Shanghai"') && html.includes('timeZone:"Asia/Shanghai"'));
 
 const readme = read("README.md");
-check("README says episodes 1–30 are published on both hosts", readme.includes("第 1–30 篇已在 GitHub Pages 和 CloudBase 正式站发布"));
-check("README keeps shared CloudBase auth and the two-day unlock", readme.includes("同一套 CloudBase 账号") && readme.includes("D → D+2") && readme.includes("安全域名"));
+check("README says the 30 stories are published", readme.includes("第 1–30 篇故事已在 GitHub Pages 和 CloudBase 正式站发布"));
+check("README does not claim the shared login is already live", readme.includes("还没有部署") && readme.includes("线上现在还没有这项能力") && readme.includes("D → D+2"));
 check("README keeps the two-day unlock", readme.includes("两个自然日"));
 
 const padAndCal = new Function(

@@ -1,6 +1,7 @@
 /**
- * Mocked CloudBase auth and sync checks. No network, no email, no OTP.
- * These mocks are not the live gateway.
+ * In-memory mocks of KetCloud only. No network, no email, no OTP, no browser.
+ * A failure is a mock-store assertion. It does not read localStorage, a stale
+ * page cache, or a second origin, and it does not prove Pages and CloudBase sync.
  */
 import fs from "fs";
 import path from "path";
@@ -120,7 +121,7 @@ K._hooks.getLocalBundle = function () { return bundle({ "sc-w1-01": { seen: true
 K._hooks.confirmImport = function () { return false; };
 K._hooks.applyMerged = function (b) { applied = b; };
 await K.syncAfterLogin();
-check("declining import does not write local progress into an empty cloud", !store["user-a"] || !store["user-a"].state);
+check("mock store: declining import does not copy local cards into an empty record", !store["user-a"] || !store["user-a"].state);
 
 store["user-a"] = {
   state: { cards: { "sc-w2-01": { seen: true, intervalIdx: 2, due: "2026-09-01" } }, sentences: [], checkins: {}, daily: {} },
@@ -131,17 +132,17 @@ store["user-a"] = {
 applied = null;
 await K.syncAfterLogin();
 check(
-  "declining a merge does not replace cloud cards with local cards",
+  "mock store: declining a merge does not copy the other record's cards",
   store["user-a"].state.cards["sc-w2-01"] && !store["user-a"].state.cards["sc-w1-01"]
 );
-check("declining a merge applies the cloud cards, not the local ones", applied && applied.state.cards["sc-w2-01"] && !applied.state.cards["sc-w1-01"]);
+check("mock store: declined merge returns the stored cards, not the other record", applied && applied.state.cards["sc-w2-01"] && !applied.state.cards["sc-w1-01"]);
 
 K.user = { uid: "user-b", email: "other@example.com" };
 K._hooks.getLocalBundle = function () { return bundle({ "sc-w3-01": { seen: true, intervalIdx: 1, due: "2026-08-01" } }); };
 K._hooks.confirmImport = function () { return true; };
 await K.syncAfterLogin();
-check("a second account does not read the first account bundle", store["user-b"] && store["user-b"].state.cards["sc-w3-01"] && !store["user-b"].state.cards["sc-w2-01"]);
-check("the first account still does not contain the second account's card", store["user-a"].state.cards["sc-w2-01"] && !store["user-a"].state.cards["sc-w3-01"]);
+check("mock store: a second id does not read the first id's record", store["user-b"] && store["user-b"].state.cards["sc-w3-01"] && !store["user-b"].state.cards["sc-w2-01"]);
+check("mock store: the first id does not gain the second id's card", store["user-a"].state.cards["sc-w2-01"] && !store["user-a"].state.cards["sc-w3-01"]);
 
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 check("login page does not disable CloudBase on GitHub Pages", !html.includes("applyPagesMirrorGate") && !/if\(isPagesMirror\(\)\)/.test(html));
@@ -150,4 +151,4 @@ if (failures.length) {
   console.error(failures.length + " failed");
   process.exit(1);
 }
-console.log("all mocked auth checks passed", "failures", 0);
+console.log("all in-memory auth mock checks passed; not a cross-origin or live-login result");
