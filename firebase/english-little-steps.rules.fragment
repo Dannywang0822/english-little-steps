@@ -1,0 +1,53 @@
+// PROTOTYPE ONLY. Do not deploy this file by itself.
+// Paste the helpers and the match /englishLittleSteps block INTO the existing
+// match /databases/{database}/documents block. Do not delete Portfolio Tracker
+// or any other match. Do not add a catch-all deny. Names are prefixed els*
+// so they do not replace existing helper functions.
+//
+// Path: englishLittleSteps/{userId}
+// One document per Firebase Auth uid. No email, token, or other app's data.
+// Reviewed prototype for english-subject-ket STANDARD Firestore. Not deployed.
+
+function elsSignedIn() {
+  return request.auth != null;
+}
+
+function elsOwner(userId) {
+  return elsSignedIn() && request.auth.uid == userId;
+}
+
+function elsKeysOk() {
+  return request.resource.data.keys().hasOnly([
+    "schemaVersion", "app", "uid", "state", "logs", "tts", "updatedAtMs"
+  ]);
+}
+
+function elsValidBundle(userId) {
+  return elsKeysOk()
+    && request.resource.data.schemaVersion == 1
+    && request.resource.data.app == "english-little-steps"
+    && request.resource.data.uid == userId
+    && request.resource.data.uid == request.auth.uid
+    && request.resource.data.state is map
+    && request.resource.data.state.keys().size() <= 64
+    && request.resource.data.logs is list
+    && request.resource.data.logs.size() <= 120
+    && request.resource.data.tts is map
+    && request.resource.data.tts.keys().size() <= 12
+    && request.resource.data.updatedAtMs is int
+    && request.resource.data.updatedAtMs > 0
+    && request.resource.size() < 900000;
+}
+
+function elsIdentityUnchanged() {
+  return request.resource.data.uid == resource.data.uid
+    && request.resource.data.app == resource.data.app
+    && request.resource.data.schemaVersion == resource.data.schemaVersion;
+}
+
+match /englishLittleSteps/{userId} {
+  allow read: if elsOwner(userId);
+  allow create: if elsOwner(userId) && elsValidBundle(userId);
+  allow update: if elsOwner(userId) && elsValidBundle(userId) && elsIdentityUnchanged();
+  allow delete: if false;
+}

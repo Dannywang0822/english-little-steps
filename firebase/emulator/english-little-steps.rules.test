@@ -1,0 +1,45 @@
+// EMULATOR TEST WRAPPER. NOT a replacement for production rules.
+// It does not include Portfolio Tracker matches. Do not deploy this file.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function elsSignedIn() {
+      return request.auth != null;
+    }
+    function elsOwner(userId) {
+      return elsSignedIn() && request.auth.uid == userId;
+    }
+    function elsKeysOk() {
+      return request.resource.data.keys().hasOnly([
+        "schemaVersion", "app", "uid", "state", "logs", "tts", "updatedAtMs"
+      ]);
+    }
+    function elsValidBundle(userId) {
+      return elsKeysOk()
+        && request.resource.data.schemaVersion == 1
+        && request.resource.data.app == "english-little-steps"
+        && request.resource.data.uid == userId
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.state is map
+        && request.resource.data.state.keys().size() <= 64
+        && request.resource.data.logs is list
+        && request.resource.data.logs.size() <= 120
+        && request.resource.data.tts is map
+        && request.resource.data.tts.keys().size() <= 12
+        && request.resource.data.updatedAtMs is int
+        && request.resource.data.updatedAtMs > 0
+        && request.resource.size() < 900000;
+    }
+    function elsIdentityUnchanged() {
+      return request.resource.data.uid == resource.data.uid
+        && request.resource.data.app == resource.data.app
+        && request.resource.data.schemaVersion == resource.data.schemaVersion;
+    }
+    match /englishLittleSteps/{userId} {
+      allow read: if elsOwner(userId);
+      allow create: if elsOwner(userId) && elsValidBundle(userId);
+      allow update: if elsOwner(userId) && elsValidBundle(userId) && elsIdentityUnchanged();
+      allow delete: if false;
+    }
+  }
+}
