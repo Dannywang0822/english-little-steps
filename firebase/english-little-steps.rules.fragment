@@ -22,6 +22,40 @@ function elsKeysOk() {
   ]);
 }
 
+// `let` needs rules_version = '2'. Paste this only into a file that already says that.
+function elsDateShape(value) {
+  return value is string && value.size() == 10 && value.matches("^\\d{4}-\\d{2}-\\d{2}$");
+}
+
+// Rules cannot loop over map values, so each card's due date and types are
+// checked by js/progress-transfer.js before import. An owner who skips the
+// client can still store a bad card inside their own document. That does not
+// let them read another uid or change ownership. Impossible dates such as
+// 2026-02-31 also match the shape check below.
+function elsStateOk() {
+  let s = request.resource.data.state;
+  return s.keys().hasOnly([
+      "topicId", "cards", "daily", "streak", "lastActiveDate", "sentences",
+      "activeDays", "checkins", "litCelebrated", "allLitCelebrated",
+      "planStartedAt", "stage0PassedAt", "wn", "club", "_litSeeded"
+    ])
+    && (!("topicId" in s) || (s.topicId is string && s.topicId.size() > 0 && s.topicId.size() <= 40))
+    && (!("cards" in s) || (s.cards is map && s.cards.size() <= 800))
+    && (!("sentences" in s) || (s.sentences is list && s.sentences.size() <= 500))
+    && (!("streak" in s) || (s.streak is int && s.streak >= 0 && s.streak <= 10000))
+    && (!("lastActiveDate" in s) || s.lastActiveDate == null || elsDateShape(s.lastActiveDate))
+    && (!("planStartedAt" in s) || s.planStartedAt == null || elsDateShape(s.planStartedAt))
+    && (!("stage0PassedAt" in s) || s.stage0PassedAt == null || elsDateShape(s.stage0PassedAt))
+    && (!("checkins" in s) || (s.checkins is map && s.checkins.size() <= 2000))
+    && (!("activeDays" in s) || (s.activeDays is map && s.activeDays.size() <= 2000))
+    && (!("daily" in s) || s.daily is map)
+    && (!("club" in s) || (s.club is map && (!("episodes" in s.club) || (s.club.episodes is map && s.club.episodes.size() <= 30))))
+    && (!("wn" in s) || s.wn is map)
+    && (!("litCelebrated" in s) || s.litCelebrated is map)
+    && (!("allLitCelebrated" in s) || s.allLitCelebrated is bool)
+    && (!("_litSeeded" in s) || s._litSeeded is bool);
+}
+
 function elsValidBundle(userId) {
   return elsKeysOk()
     && request.resource.data.schemaVersion == 1
@@ -29,7 +63,7 @@ function elsValidBundle(userId) {
     && request.resource.data.uid == userId
     && request.resource.data.uid == request.auth.uid
     && request.resource.data.state is map
-    && request.resource.data.state.keys().size() <= 64
+    && elsStateOk()
     && request.resource.data.logs is list
     && request.resource.data.logs.size() <= 120
     && request.resource.data.tts is map

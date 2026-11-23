@@ -67,6 +67,31 @@ badDate.bundle.state.cards["sc-w1-01"].due = "2026-02-31";
 check("an impossible due date is rejected", !PT.validateImport(JSON.stringify(badDate)).ok);
 const huge = "x".repeat(PT ? 900001 : 1);
 check("an oversized file is rejected", !PT.validateImport(huge).ok);
+const badInterval = JSON.parse(JSON.stringify(good));
+badInterval.bundle.state.cards["sc-w1-01"].intervalIdx = "2";
+check("a non-numeric interval is rejected", !PT.validateImport(JSON.stringify(badInterval)).ok);
+const hugeInterval = JSON.parse(JSON.stringify(good));
+hugeInterval.bundle.state.cards["sc-w1-01"].intervalIdx = 99;
+check("an interval outside the SRS range is rejected", !PT.validateImport(JSON.stringify(hugeInterval)).ok);
+const longSentence = JSON.parse(JSON.stringify(good));
+longSentence.bundle.state.sentences = [{ text: "x".repeat(401), date: "2026-11-23" }];
+check("an oversized sentence is rejected", !PT.validateImport(JSON.stringify(longSentence)).ok);
+const longNote = JSON.parse(JSON.stringify(good));
+longNote.bundle.state.daily = { date: "2026-11-23", note: "n".repeat(2001) };
+check("an oversized nested string is rejected", !PT.validateImport(JSON.stringify(longNote)).ok);
+const many = JSON.parse(JSON.stringify(good));
+many.bundle.state.cards = {};
+for (let i = 0; i < 801; i++) many.bundle.state.cards["c" + i] = { seen: true };
+check("more than 800 cards are rejected", !PT.validateImport(JSON.stringify(many)).ok);
+const existing = JSON.parse(JSON.stringify(good));
+existing.bundle.state.cards["sc-w1-01"] = {
+  id: "sc-w1-01", intervalIdx: 2, due: "2026-11-25", seen: true, reviews: 1,
+  remembers: 1, lastResult: "right", openOk: true, lastReviewDate: "2026-11-23",
+  errors: 0, stubborn: false, stubIdx: 0, consecRight: 1, mastered: false,
+  priority: false, relearn: null, fromClub: 1
+};
+existing.bundle.state.club = { episodes: { "1": { finished: true, finishedAt: "2026-11-23", coverLearnDates: ["2026-11-23", "2026-11-24"] } } };
+check("a current card and episode bundle still passes", PT.validateImport(JSON.stringify(existing)).ok);
 const view = PT.preview(ok.data, "firebase", "fb-user");
 check("preview shows different backend scope", view.cards === 1 && view.sameScope === false && view.sourceBackend === "cloudbase");
 const exported = PT.buildExport(good.bundle, { backend: "local", uid: "" });

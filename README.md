@@ -96,7 +96,7 @@ python3 -m http.server 8765
 
 未配置时应用自动走 **纯 localStorage**。配置 `cloudbase-config.js` 后可用邮箱注册/登录，进度同步到 CloudBase 文档库。
 
-> 仅使用腾讯云 CloudBase（Auth + 文档库）。仓库内已无 Firebase 配置/规则/依赖。
+> 国内站继续用 CloudBase。GitHub Pages 这条分支准备改用 Firebase，但 `firebase-config.js` 在 `.gitignore` 里。`.github/workflows/pages.yml` 只上传仓库里的文件，没有构建步骤，也没有把配置写进页面。所以只合并代码不会把 Firebase 配置发到 Pages。网页配置是公开的 Web 配置，不是服务账号；确认 English Little Steps 那个 Web app 之后，由所有者检查 diff 再提交 `firebase-config.js`。不要把它放进 Actions secrets，这次也不改 workflow。
 
 ### 一次性配置（Danny / HR）
 

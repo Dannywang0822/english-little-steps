@@ -1,7 +1,10 @@
 /**
  * Copy to firebase-config.js only after the owner confirms the public Web config.
- * firebase-config.js is gitignored. Do not put a service account or Admin key here.
- * Placeholders below are not a real app. Missing config keeps Pages on this browser only.
+ * firebase-config.js is gitignored, and .github/workflows/pages.yml uploads the git tree
+ * with no build step. Merging this branch does not publish a config. Do not put a
+ * service account or Admin key here, and do not move the public Web values into
+ * Actions secrets. Placeholders below are not a real app. Missing config keeps
+ * Pages on this browser only.
  *
  * Candidate app, not fetched into this file:
  * project english-subject-ket, app English Little Steps

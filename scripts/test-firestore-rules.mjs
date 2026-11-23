@@ -73,6 +73,36 @@ await assertFails(setDoc(ref(owner, "owner-a"), bulky));
 check("too many log rows are denied", true);
 await assertSucceeds(updateDoc(ref(owner, "owner-a"), { updatedAtMs: Date.now() }));
 check("owner can update the timestamp", true);
+const badDate = good("owner-a");
+badDate.state = { lastActiveDate: "not-a-date" };
+await assertFails(updateDoc(ref(owner, "owner-a"), badDate));
+check("a malformed date update is denied", true);
+const badStreak = good("owner-a");
+badStreak.state = { streak: -1 };
+await assertFails(setDoc(ref(owner, "owner-a"), badStreak));
+check("a negative streak is denied", true);
+const many = good("owner-a");
+many.state = { cards: {} };
+for (let i = 0; i < 801; i++) many.state.cards["c" + i] = { seen: true };
+await assertFails(setDoc(ref(owner, "owner-a"), many));
+check("more than 800 cards are denied", true);
+const kept = await getDoc(ref(owner, "owner-a"));
+check("rejected nested writes leave the original bundle", kept.exists() && kept.data().state.cards["sc-w1-01"].seen === true);
+const loose = good("owner-a");
+loose.state = { cards: { x: "not-a-card" }, lastActiveDate: "2026-02-31" };
+await assertSucceeds(setDoc(ref(owner, "owner-a"), loose));
+check("rules still cannot type each card or reject an impossible calendar date", true);
+const shaped = good("owner-a");
+shaped.state = {
+  topicId: "school",
+  cards: { "sc-w1-01": { seen: true, intervalIdx: 2, due: "2026-11-25" } },
+  streak: 3,
+  lastActiveDate: "2026-11-23",
+  sentences: [],
+  club: { episodes: { "1": { finished: true, finishedAt: "2026-11-23" } } }
+};
+await assertSucceeds(setDoc(ref(owner, "owner-a"), shaped));
+check("a current progress shape is still accepted", true);
 await assertFails(deleteDoc(ref(owner, "owner-a")));
 check("delete is denied and the document remains", true);
 const still = await getDoc(ref(owner, "owner-a"));
