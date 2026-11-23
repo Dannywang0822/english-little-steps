@@ -19,7 +19,7 @@
 
 - 这是同一世界观里的周末短篇系列，帮助孩子用已学词块读完整故事。
 - **节奏**：每两天一篇，KET 季先排 **30 篇**（约两个月）。第 1 篇打开就能读。之后每一篇都要上一篇已经读完，并且完成日按 **Asia/Shanghai** 再过两个自然日（读完当天是 D，最早 D+2）才解锁；没有正文的篇目不解锁。读得慢也不会一次放出积压的好几篇。读过的可以随时再读。
-- **第 1–30 篇已发布到 GitHub Pages 和 CloudBase 正式站，线上文件已与这次发布核对一致。** 仍是顺序解锁：读完上一篇后，下一篇最早按 **Asia/Shanghai** 再过两个自然日（D → D+2）才开放，不会一次全部打开。Pages 只做镜像，登录关闭；正式邮箱登录和云同步只在 CloudBase（`tencent_only`）。
+- **第 1–30 篇故事已在 GitHub Pages 和 CloudBase 正式站发布。** 顺序解锁不变（D → D+2，Asia/Shanghai）。这条分支准备国内站继续用 CloudBase、GitHub Pages 用 Firebase 邮箱密码。公开网页配置已放进仓库供审阅；现有 Pages 流水线只在推送到 `main` 时上传 git 树，所以合并之前 Pages 仍不会连上 Firebase，也不会去连 CloudBase。两个云不会自动互相同步，相同邮箱也不等于同一个账号。还没有部署。
 - 30 篇有正文也不等于可以连着读完：下一篇仍然要等上一篇读完，并且按上海时区再过两个自然日才解锁。
 - 第 6–30 篇每篇另有 6 句可选拼句，放在原来的造句里抽几句用，不要求 6 句全部做完，也不单独算一项打卡。理解题只给参考答案，不按逐字对错计分。
 - 人物名用英文：**Leo / Mia / Jay**，第 2 篇起有同校学生 **Alex**，第 4 篇有配角 **Ben**（两个同名男孩不分开记）。中文里也用英文名，不另起中文名。
@@ -96,7 +96,7 @@ python3 -m http.server 8765
 
 未配置时应用自动走 **纯 localStorage**。配置 `cloudbase-config.js` 后可用邮箱注册/登录，进度同步到 CloudBase 文档库。
 
-> 仅使用腾讯云 CloudBase（Auth + 文档库）。仓库内已无 Firebase 配置/规则/依赖。
+> 国内站继续用 CloudBase。GitHub Pages 用 Firebase 的准备在这条分支里。`firebase-config.js` 是 English Little Steps 那个 Web app 的公开配置，不是服务账号。`.github/workflows/pages.yml` 没有改：推送到 `main` 时 checkout 仓库并上传 `path: .`，没有构建步骤。文件进了 git 之后，下一次合并到 `main` 才会被现有流水线带上。这次不合并、不发布。不要把网页配置放进 Actions secrets。登录方式和授权域名这次没有读取。
 
 ### 一次性配置（Danny / HR）
 

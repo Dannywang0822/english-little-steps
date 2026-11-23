@@ -367,6 +367,21 @@
       <ul class="log-list" id="log-list"></ul>
       <div class="empty" id="log-empty">还没有记录，完成一步就会出现～</div>
     </section>
+    <div class="card-block" id="transfer-box" style="margin-top:14px">
+      <div class="label">进度文件</div>
+      <p class="hint-line">只导出学习进度。文件里没有密码或登录凭证。导入前会先检查格式，取消或检查失败都不会改现有进度。这不会把 CloudBase 和 Firebase 自动当成同一个账号。</p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" id="btn-export">导出进度</button>
+        <button type="button" class="btn btn-ghost" id="btn-import">选择文件</button>
+      </div>
+      <input type="file" id="import-file" accept="application/json,.json" hidden />
+      <pre id="transfer-preview" hidden style="white-space:pre-wrap;font-size:12px"></pre>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="transfer-confirm" hidden>确认导入</button>
+        <button type="button" class="btn btn-ghost" id="transfer-cancel" hidden>取消</button>
+      </div>
+      <div class="login-err" id="transfer-msg"></div>
+    </div>
     <div style="text-align:center;margin-top:14px"><button type="button" class="btn btn-ghost" id="btn-logout" style="font-size:13px;padding:8px 16px">退出登录</button></div>
     <footer>本地原型 · 数据只存本机 · 从 KET 起步，目标雅思 8</footer>
   </div>
@@ -400,10 +415,17 @@
   <script src="js/sentence-grammar.js"></script>
   <script src="js/wordnet.js"></script>
   <script src="js/cloud-sync.js"></script>
+  <script src="js/host-backend.js"></script>
+  <script src="js/progress-transfer.js"></script>
+  <script src="js/firebase-progress.js"></script>
   <script>
   (function(){
     "use strict";
     var DATA = window.__TOPICS__;
+    function cloudApi(){
+      if(window.HostBackend && HostBackend.select()==="firebase" && window.FirebaseProgress) return FirebaseProgress;
+      return window.KetCloud;
+    }
     var INTERVALS = [1,3,7,14,30,60];
     var NEW_CAP = 12;               /* normal daily new-card cap */
     var NEW_CAP_SHARED = false;     /* true: shared daily cap; false: 12 per topic (Danny chose) */
@@ -463,7 +485,7 @@
       settings:{slow:false,autoRead:true}};
     try{ var ts=JSON.parse(localStorage.getItem(TTS_KEY)||"null"); if(ts){ tts.settings.slow=!!ts.slow; tts.settings.autoRead=ts.autoRead!==false; } }catch(e){}
     function saveTts(){ try{ localStorage.setItem(TTS_KEY, JSON.stringify(tts.settings)); }catch(e){}
-      try{ if(window.KetCloud && KetCloud.enabled && KetCloud.mode==="cloud") KetCloud.schedulePush(); }catch(e){}
+      try{ if(window.KetCloud && cloudApi().enabled && cloudApi().mode==="cloud") cloudApi().schedulePush(); }catch(e){}
     }
     function pickVoice(){
       if(!tts.supported) return;
@@ -649,7 +671,7 @@
       ensureDaily();
     }
     function save(){ try{ localStorage.setItem(STATE_KEY, JSON.stringify(state)); }catch(e){}
-      try{ if(window.KetCloud && KetCloud.enabled && KetCloud.mode==="cloud") KetCloud.schedulePush(); }catch(e){}
+      try{ if(window.KetCloud && cloudApi().enabled && cloudApi().mode==="cloud") cloudApi().schedulePush(); }catch(e){}
     }
 
     function markActive(){
@@ -1606,12 +1628,12 @@
       if(booted && state) st=JSON.parse(JSON.stringify(state));
       return { state:st, logs:logs, tts:ttsSet||tts.settings, updatedAt:Date.now() };
     }
-    function setMode(m){ try{ sessionStorage.setItem(AUTH_MODE_KEY,m); localStorage.setItem(AUTH_MODE_KEY,m);}catch(e){} if(window.KetCloud) KetCloud.mode=(m==="cloud"?"cloud":"guest"); }
+    function setMode(m){ try{ sessionStorage.setItem(AUTH_MODE_KEY,m); localStorage.setItem(AUTH_MODE_KEY,m);}catch(e){} if(window.KetCloud) cloudApi().mode=(m==="cloud"?"cloud":"guest"); }
     function getMode(){ try{ return sessionStorage.getItem(AUTH_MODE_KEY)||localStorage.getItem(AUTH_MODE_KEY)||""; }catch(e){ return ""; } }
 
     document.getElementById("btn-guest").onclick=function(){
       setMode("guest");
-      if(window.KetCloud) KetCloud.mode="guest";
+      if(window.KetCloud) cloudApi().mode="guest";
       try{ sessionStorage.setItem(AUTH_KEY, "guest"); }catch(e){}
       enterApp(); toast("游客模式：进度只在本机 📱");
       setSyncStatus("游客 · 仅本机");
@@ -1626,7 +1648,7 @@
           try{ if(rem) localStorage.setItem(AUTH_KEY, USER_HASH); else localStorage.removeItem(AUTH_KEY); }catch(err){}
           try{ sessionStorage.setItem(AUTH_KEY, USER_HASH); }catch(err){}
           setMode("pin");
-          if(window.KetCloud) KetCloud.mode="guest";
+          if(window.KetCloud) cloudApi().mode="guest";
           enterApp(); toast("本地锁通过，开始加油吧！💪");
           setSyncStatus("本地锁 · 未连云端");
         } else {
@@ -1656,13 +1678,12 @@
 
 
     function cloudUnavailableReason(){
-      if(isPagesMirror()) return "本站是 GitHub Pages 镜像，请到腾讯云版登录";
-      if(window.KetCloud && KetCloud.lastError) return "云端未就绪："+KetCloud.lastError;
-      if(window.KetCloud && KetCloud.ready && !KetCloud.enabled) return "云端未就绪，请刷新后重试，或先用「游客继续」";
+      if(window.HostBackend && HostBackend.select()==="firebase") return (window.FirebaseProgress && FirebaseProgress.lastError) || "GitHub Pages 使用 Firebase。网页配置还没放上时，进度只在本机。";
+      if(window.KetCloud && cloudApi().lastError) return "云端未就绪："+cloudApi().lastError;
+      if(window.KetCloud && cloudApi().ready && !cloudApi().enabled) return "云端未就绪，请刷新后重试，或先用「游客继续」";
       return "云端正在连接，请稍候…";
     }
     function setCloudAuthUi(ready, on){
-      if(isPagesMirror()) return;
       var ids=["btn-cloud-login","btn-cloud-reg","btn-send-code","cl-email","cl-pass","cr-email","cr-pass","cr-pass2","cr-code"];
       ids.forEach(function(id){
         var el=document.getElementById(id);
@@ -1681,9 +1702,9 @@
 
     function afterCloudAuth(user){
       setMode("cloud");
-      KetCloud.mode="cloud";
+      cloudApi().mode="cloud";
       setSyncStatus("云端同步中…");
-      return KetCloud.syncAfterLogin().then(function(){
+      return cloudApi().syncAfterLogin().then(function(){
         enterApp();
         toast("已登录云端，进度会自动同步 ☁️");
         setSyncStatus("已登录 · "+(user.email||"云端"));
@@ -1698,11 +1719,11 @@
     document.getElementById("cloud-login-form").addEventListener("submit", function(e){
       e.preventDefault();
       var err=document.getElementById("cl-err"); err.textContent="";
-      if(!window.KetCloud || !KetCloud.enabled){ err.textContent=cloudUnavailableReason(); return; }
+      if(!window.KetCloud || !cloudApi().enabled){ err.textContent=cloudUnavailableReason(); return; }
       var email=document.getElementById("cl-email").value.trim();
       var pass=document.getElementById("cl-pass").value;
       var btn=document.getElementById("btn-cloud-login"); btn.disabled=true;
-      KetCloud.login(email, pass).then(afterCloudAuth).catch(function(ex){ err.textContent=cloudMsg(ex); }).then(function(){ btn.disabled=false; });
+      cloudApi().login(email, pass).then(afterCloudAuth).catch(function(ex){ err.textContent=cloudMsg(ex); }).then(function(){ btn.disabled=false; });
     });
 
     var _sendCodeCooldown=0;
@@ -1722,12 +1743,12 @@
     document.getElementById("btn-send-code").addEventListener("click", function(){
       var err=document.getElementById("cr-err"), ok=document.getElementById("cr-ok");
       err.textContent=""; ok.textContent="";
-      if(!window.KetCloud || !KetCloud.enabled){ err.textContent=cloudUnavailableReason(); return; }
+      if(!window.KetCloud || !cloudApi().enabled){ err.textContent=cloudUnavailableReason(); return; }
       var email=document.getElementById("cr-email").value.trim();
       if(!email){ err.textContent="请先填写邮箱"; return; }
       var btn=document.getElementById("btn-send-code");
       btn.disabled=true;
-      KetCloud.sendRegisterCode(email).then(function(){
+      cloudApi().sendRegisterCode(email).then(function(){
         ok.textContent="验证码已发送，请查收邮箱（含垃圾箱）";
         _sendCodeCooldown=60;
         tickSendCodeBtn();
@@ -1742,34 +1763,110 @@
       e.preventDefault();
       var err=document.getElementById("cr-err"), ok=document.getElementById("cr-ok");
       err.textContent=""; ok.textContent="";
-      if(!window.KetCloud || !KetCloud.enabled){ err.textContent=cloudUnavailableReason(); return; }
+      if(!window.KetCloud || !cloudApi().enabled){ err.textContent=cloudUnavailableReason(); return; }
       var email=document.getElementById("cr-email").value.trim();
       var p1=document.getElementById("cr-pass").value, p2=document.getElementById("cr-pass2").value;
       var code=document.getElementById("cr-code").value.trim();
       if(p1.length<8){ err.textContent="密码至少 8 位，且需包含字母和数字"; return; }
       if(!/[A-Za-z]/.test(p1) || !/[0-9]/.test(p1)){ err.textContent="密码需同时包含字母和数字"; return; }
       if(p1!==p2){ err.textContent="两次密码不一致"; return; }
-      if(!code){ err.textContent="请填写邮箱验证码（先点「发送验证码」）"; return; }
+      var firebaseHost = window.HostBackend && HostBackend.select()==="firebase";
+      if(!firebaseHost && !code){ err.textContent="请填写邮箱验证码（先点「发送验证码」）"; return; }
       var btn=document.getElementById("btn-cloud-reg"); btn.disabled=true;
-      KetCloud.register(email, p1, code).then(function(user){
+      var reg = (window.HostBackend && HostBackend.select()==="firebase")
+        ? cloudApi().register(email, p1)
+        : cloudApi().register(email, p1, code);
+      reg.then(function(user){
         ok.textContent="注册成功！正在进入…";
         return afterCloudAuth(user);
       }).catch(function(ex){ err.textContent=cloudMsg(ex); }).then(function(){ btn.disabled=false; });
     });
+
+    var pendingImport=null;
+    function currentScope(){
+      var api=cloudApi();
+      var user=api && api.currentUser ? api.currentUser() : null;
+      return { backend: (window.HostBackend && HostBackend.select()) || "local", uid: user && user.uid || "" };
+    }
+    document.getElementById("btn-export").onclick=function(){
+      var msg=document.getElementById("transfer-msg");
+      msg.textContent="";
+      try{
+        var scope=currentScope();
+        var text=ProgressTransfer.buildExport(localBundle(), { backend: scope.backend==="firebase"||scope.backend==="cloudbase" ? scope.backend : "local", uid: scope.uid });
+        var blob=new Blob([text], { type: "application/json" });
+        var a=document.createElement("a");
+        a.href=URL.createObjectURL(blob);
+        a.download="english-little-steps-progress.json";
+        a.click();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+      }catch(e){ msg.textContent="这份进度不能导出。"; }
+    };
+    document.getElementById("btn-import").onclick=function(){ document.getElementById("import-file").click(); };
+    document.getElementById("import-file").onchange=function(){
+      var file=this.files && this.files[0];
+      var msg=document.getElementById("transfer-msg");
+      var preview=document.getElementById("transfer-preview");
+      msg.textContent=""; preview.hidden=true; pendingImport=null;
+      document.getElementById("transfer-confirm").hidden=true;
+      document.getElementById("transfer-cancel").hidden=true;
+      if(!file) return;
+      var reader=new FileReader();
+      reader.onload=function(){
+        var checked=ProgressTransfer.validateImport(String(reader.result||""));
+        if(!checked.ok){ msg.textContent="文件未通过检查，现有进度没有改。"; return; }
+        var scope=currentScope();
+        var view=ProgressTransfer.preview(checked.data, scope.backend, scope.uid);
+        pendingImport=checked.data;
+        preview.hidden=false;
+        preview.textContent="来源 "+(view.sourceBackend||"未知")+" · 卡片 "+view.cards+" · 句子 "+view.sentences+" · 打卡 "+view.checkins+(view.sameScope?" · 同一账号范围":" · 不同账号或不同云，确认后才会合并到当前进度");
+        document.getElementById("transfer-confirm").hidden=false;
+        document.getElementById("transfer-cancel").hidden=false;
+      };
+      reader.readAsText(file);
+      this.value="";
+    };
+    document.getElementById("transfer-cancel").onclick=function(){
+      pendingImport=null;
+      document.getElementById("transfer-preview").hidden=true;
+      document.getElementById("transfer-confirm").hidden=true;
+      document.getElementById("transfer-cancel").hidden=true;
+      document.getElementById("transfer-msg").textContent="已取消，进度未改。";
+    };
+    document.getElementById("transfer-confirm").onclick=function(){
+      var msg=document.getElementById("transfer-msg");
+      if(!pendingImport){ msg.textContent="没有可导入的文件。"; return; }
+      if(!window.confirm("确认把这份进度合并进当前浏览器吗？取消不会改现有进度。")) return;
+      try{
+        var merged = window.KetCloud && KetCloud._mergeBundles
+          ? KetCloud._mergeBundles(localBundle(), pendingImport.bundle)
+          : pendingImport.bundle;
+        applyCloudBundle(merged);
+        pendingImport=null;
+        document.getElementById("transfer-preview").hidden=true;
+        document.getElementById("transfer-confirm").hidden=true;
+        document.getElementById("transfer-cancel").hidden=true;
+        msg.textContent="已合并到本机。若当前登录了云端，随后的保存会写入这个账号自己的进度。";
+        var api=cloudApi();
+        if(api && api.mode==="cloud" && api.flush) api.flush().catch(function(){ msg.textContent="本机已合并，云端保存失败，云端原进度还在。"; });
+      }catch(e){
+        msg.textContent="导入失败，现有进度没有改。";
+      }
+    };
 
     document.getElementById("btn-logout").onclick=function(){
       var finish=function(){
         try{ localStorage.removeItem(AUTH_KEY); sessionStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_MODE_KEY); sessionStorage.removeItem(AUTH_MODE_KEY);}catch(e){}
         showLogin(); setAuthTab("guest"); setSyncStatus(""); toast("已退出");
       };
-      if(window.KetCloud && KetCloud.enabled && KetCloud.mode==="cloud"){
+      if(window.KetCloud && cloudApi().enabled && cloudApi().mode==="cloud"){
         setSyncStatus("正在保存并退出…");
-        KetCloud.logout().then(finish).catch(finish);
+        cloudApi().logout().then(finish).catch(finish);
       } else finish();
     };
 
     if(window.KetCloud){
-      KetCloud.configureHooks({
+      cloudApi().configureHooks({
         getLocalBundle: localBundle,
         applyMerged: applyCloudBundle,
         confirmImport: function(msg){ return window.confirm(msg); },
@@ -1782,12 +1879,11 @@
       if(!b) return;
       var loginHint=document.getElementById("cloud-login-hint");
       var regHint=document.getElementById("cloud-reg-hint");
-      if(isPagesMirror()){
-        b.textContent="GitHub Pages 镜像";
-        b.classList.add("off");
-        var linkHtml='登录与云同步请打开腾讯云版：<a href="'+TENCENT_HOSTING_URL+'" target="_blank" rel="noopener">english-little-steps（腾讯云）</a>。本站可游客学，进度只在本机。';
-        if(loginHint) loginHint.innerHTML=linkHtml;
-        if(regHint) regHint.innerHTML=linkHtml;
+      if(window.HostBackend && HostBackend.select()==="firebase"){
+        if(on){ b.textContent="Firebase 已就绪"; b.classList.remove("off"); }
+        else { b.textContent="本机学习"; b.classList.add("off"); }
+        if(loginHint) loginHint.textContent = on ? "邮箱和密码登录这个 Firebase 账号。不会连到 CloudBase，也不会自动合并另一个云。" : cloudUnavailableReason();
+        if(regHint) regHint.textContent = on ? "用邮箱和密码注册。这里不发 CloudBase 验证码。" : cloudUnavailableReason();
         return;
       }
       if(on){ b.textContent="云端已就绪"; b.classList.remove("off"); }
@@ -1820,34 +1916,42 @@
       try{ remembered=localStorage.getItem(AUTH_KEY)||sessionStorage.getItem(AUTH_KEY); }catch(e){}
       /* headless / returning guest or PIN */
       if(remembered==="guest" || getMode()==="guest"){
-        if(window.KetCloud) KetCloud.mode="guest";
+        if(window.KetCloud) cloudApi().mode="guest";
         enterApp(); setSyncStatus("游客 · 仅本机"); return;
       }
-      if(remembered===USER_HASH){ if(window.KetCloud) KetCloud.mode="guest"; enterApp(); return; }
+      if(remembered===USER_HASH){ if(window.KetCloud) cloudApi().mode="guest"; enterApp(); return; }
 
-      /* tencent_only: GitHub Pages is mirror — no CloudBase login here */
-      if(isPagesMirror()){
-        applyPagesMirrorGate();
-        showLogin();
-        setAuthTab("guest");
-        setSyncStatus("Pages 镜像 · 登录请用腾讯云版");
+      if(window.HostBackend && HostBackend.select()==="firebase"){
+        var codeRow=document.querySelector(".code-row");
+        if(codeRow) codeRow.style.display="none";
+        setCloudAuthUi(false, false);
+        FirebaseProgress.bootstrap().then(function(on){
+          updateCloudBadge(!!on);
+          setCloudAuthUi(true, !!on);
+          if(on && FirebaseProgress.currentUser()) return afterCloudAuth(FirebaseProgress.currentUser());
+          showLogin();
+        }).catch(function(){
+          updateCloudBadge(false);
+          setCloudAuthUi(true, false);
+          showLogin();
+        });
         return;
       }
 
       setCloudAuthUi(false, false);
       var startCloud = window.KetCloud
-        ? KetCloud.bootstrap().then(function(on){
+        ? cloudApi().bootstrap().then(function(on){
             updateCloudBadge(!!on);
             setCloudAuthUi(true, !!on);
-            if(on && KetCloud.currentUser()){
-              return afterCloudAuth(KetCloud.currentUser());
+            if(on && cloudApi().currentUser()){
+              return afterCloudAuth(cloudApi().currentUser());
             }
             showLogin();
           })
         : Promise.resolve().then(function(){ updateCloudBadge(false); setCloudAuthUi(true, false); showLogin(); });
 
       startCloud.catch(function(err){
-        if(window.KetCloud && !KetCloud.lastError) KetCloud.lastError=(err && err.message)||"bootstrap failed";
+        if(window.KetCloud && !cloudApi().lastError) cloudApi().lastError=(err && err.message)||"bootstrap failed";
         updateCloudBadge(false);
         setCloudAuthUi(true, false);
         showLogin();
