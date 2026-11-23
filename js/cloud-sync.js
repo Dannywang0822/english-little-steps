@@ -248,7 +248,13 @@
       if (!auth || typeof auth.getVerification !== "function") {
         return Promise.reject(new Error("当前 SDK 不支持邮箱验证码"));
       }
-      return auth.getVerification({ email: email }).then(function (res) {
+      /* Match SDK 3.10.2 signUp's own getVerification body. The public method
+         forwards this object unchanged and does not fill usage or target. */
+      return auth.getVerification({
+        email: email,
+        usage: "email",
+        target: "ANY"
+      }).then(function (res) {
         var u = unwrapAuth(res);
         if (u.error) throw u.error;
         var data = u.data || {};

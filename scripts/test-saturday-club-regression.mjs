@@ -199,7 +199,7 @@ check("daily cap stays 40 minutes", /var DAILY_CAP_MIN = 40;/.test(html));
 check("per-topic new cap stays 12", /var NEW_CAP = 12;/.test(html) && /var NEW_CAP_SHARED = false;/.test(html));
 const steps = [...html.matchAll(/data-step="([^"]+)"/g)].map((m) => m[1]);
 check("four check-in rows only", JSON.stringify(steps) === JSON.stringify(["review", "learn", "practice", "wrap"]));
-check("Pages mirror stays login-disabled", html.includes("tencent_only") && html.includes("function isPagesMirror"));
+check("Pages client no longer refuses CloudBase login", !html.includes("applyPagesMirrorGate") && !/if\(isPagesMirror\(\)\)/.test(html));
 check("practice bank is shuffled and keeps the array", html.includes("SaturdayClub.shuffleWordBank(ch.wordBank||[])"));
 
 const startLearn = html.slice(html.indexOf("function startLearn()"), html.indexOf("function renderLearnSwipe"));
@@ -223,8 +223,8 @@ check("skip paths still exist for questions and retell", clubSrc.includes('id ==
 check("reader uses Asia/Shanghai dates", clubSrc.includes('timeZone: "Asia/Shanghai"') && html.includes('timeZone:"Asia/Shanghai"'));
 
 const readme = read("README.md");
-check("README describes 1–30 text in this version", readme.includes("第 1–30 篇都已有正文"));
-check("README says this version is not deployed yet", readme.includes("还没有部署") && readme.includes("不要把线上站点当成"));
+check("README says episodes 1–30 are published on both hosts", readme.includes("第 1–30 篇已在 GitHub Pages 和 CloudBase 正式站发布"));
+check("README keeps shared CloudBase auth and the two-day unlock", readme.includes("同一套 CloudBase 账号") && readme.includes("D → D+2") && readme.includes("安全域名"));
 check("README keeps the two-day unlock", readme.includes("两个自然日"));
 
 const padAndCal = new Function(
