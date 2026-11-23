@@ -1638,7 +1638,7 @@
       if(/otp_required|email_activation_sent/i.test(code) || /验证码|验证邮件|激活链接|发送验证码/.test(m)) return m;
       if(/invalid_verification|verification_code|verification_token|getVerification|verify\(/i.test(m) || /invalid_verification|verification/i.test(code)) return "验证码不对或已过期，请重新发送后再试";
       if(/invalid-api-key|API key|envId|YOUR_ENV|accessKey|Publishable/i.test(m)) return "CloudBase 配置无效，请检查 cloudbase-config.js 的 envId / accessKey";
-      if(/invalid_argument/i.test(code) || /invalid_argument/i.test(err && err.category || "")) return "云端返回 invalid_argument。发送验证码时这通常是邮箱格式问题；核对验证码时这通常是验证码不对或已过期。";
+      if(/invalid_argument/i.test(code) || /invalid_argument/i.test(err && err.category || "")) return "云端没有接受这次请求（invalid_argument）。普通邮箱可以再试一次；带「+」的地址不保证能用，也不是说每一种合法邮箱都会被接受。核对验证码时，这也可能表示验证码不对或已过期。";
       if(/permission_denied|安全域名|cors permission|not in.*domains/i.test(m)) return "当前网页来源不在 CloudBase 安全域名里，浏览器会拒绝这次登录。也可先用「游客继续」。";
       if(/network|unavailable|Failed to load|Failed to fetch|timeout|CORS|unreachable/i.test(m)) return "暂时连不上云端，请先点「游客继续」——进度会保存在本机；云端恢复后可用同一邮箱注册并选择导入。";
       if(/email-already|already_exists|failed_precondition|已被注册|已注册/i.test(m) || /already_exists|failed_precondition/i.test(code)) return "这个邮箱已经注册过，去「邮箱登录」试试";

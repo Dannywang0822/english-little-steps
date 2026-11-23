@@ -70,7 +70,13 @@ K._auth = {
 const email = "learner+tag@example.com";
 const password = "correct7horse";
 await K.sendRegisterCode(email);
-check("send uses email, usage email, and target ANY", calls[0].op === "getVerification" && calls[0].body.email === email && calls[0].body.usage === "email" && calls[0].body.target === "ANY");
+check(
+  "send forwards only the email field",
+  calls[0].op === "getVerification" &&
+    JSON.stringify(calls[0].body) === JSON.stringify({ email: email }) &&
+    calls[0].body.usage == null &&
+    calls[0].body.target == null
+);
 check("send does not log the address", !logs.some((line) => line.includes(email) || line.includes("learner+tag")));
 
 await K.register(email, password, "123456");
