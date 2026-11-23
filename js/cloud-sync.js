@@ -248,6 +248,8 @@
       if (!auth || typeof auth.getVerification !== "function") {
         return Promise.reject(new Error("当前 SDK 不支持邮箱验证码"));
       }
+      /* Live check on the official host: {email} alone returned 200 for a
+         base address. Do not add usage or target; that was not the failure. */
       return auth.getVerification({ email: email }).then(function (res) {
         var u = unwrapAuth(res);
         if (u.error) throw u.error;
