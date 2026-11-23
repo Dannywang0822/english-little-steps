@@ -97,6 +97,20 @@ check("preview shows different backend scope", view.cards === 1 && view.sameScop
 const exported = PT.buildExport(good.bundle, { backend: "local", uid: "" });
 check("export round-trip keeps the card and has no token field", exported.includes("sc-w1-01") && !/token|password|apiKey/i.test(exported));
 
+const cfgText = fs.readFileSync(path.join(root, "firebase-config.js"), "utf8");
+check("public config has no service-account fields", !/private_key|client_email|BEGIN PRIVATE/.test(cfgText));
+const cfg = load("firebase-config.js");
+const web = cfg.__FIREBASE_CONFIG__;
+check("public config is the English web app", web && web.projectId === "english-subject-ket" && web.appId === "1:1097055286825:web:48491debc167064026ce38");
+check("public config keeps the CLI storage bucket", web && web.storageBucket === "english-subject-ket.firebasestorage.app");
+check("public config has the six web fields and no invented database URL", web && ["apiKey", "authDomain", "projectId", "storageBucket", "messagingSenderId", "appId"].every((key) => typeof web[key] === "string" && web[key].length > 0) && web.databaseURL == null && web.measurementId == null);
+const ignore = fs.readFileSync(path.join(root, ".gitignore"), "utf8");
+check("firebase-config.js is tracked and service accounts stay ignored", !/^firebase-config\.js$/m.test(ignore) && /^serviceAccount\*\.json$/m.test(ignore));
+const pages = fs.readFileSync(path.join(root, ".github/workflows/pages.yml"), "utf8");
+check("Pages workflow still uploads the git tree and has no secret injection", pages.includes("path: .") && !/secrets\./.test(pages));
+const adapter = fs.readFileSync(path.join(root, "js/firebase-progress.js"), "utf8");
+check("adapter accepts only the English web app id", adapter.includes("1:1097055286825:web:48491debc167064026ce38") && adapter.includes('c.projectId === "english-subject-ket"'));
+
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const boot = html.slice(html.indexOf("function bootAuth"), html.indexOf("bootAuth();"));
 check("Pages boot returns before CloudBase bootstrap", boot.indexOf("HostBackend.select()===\"firebase\"") !== -1 && boot.indexOf("HostBackend.select()===\"firebase\"") < boot.indexOf("cloudApi().bootstrap()"));

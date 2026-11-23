@@ -2,7 +2,6 @@ shot-*.png
 .DS_Store
 # Never commit cloud secrets / service accounts
 serviceAccount*.json
-firebase-config.js
 firestore-debug.log
 firebase-debug.log
 .env

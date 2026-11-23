@@ -1,6 +1,6 @@
 {
   "firestore": {
-    "rules": "english-little-steps.rules.test"
+    "rules": "firestore.rules"
   },
   "emulators": {
     "firestore": {

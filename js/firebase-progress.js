@@ -13,6 +13,8 @@
     return global.__FIREBASE_CONFIG__ || null;
   }
 
+  var ENGLISH_APP_ID = "1:1097055286825:web:48491debc167064026ce38";
+
   function configReady(c) {
     if (!c || typeof c !== "object") return false;
     var keys = ["apiKey", "authDomain", "projectId", "appId"];
@@ -20,7 +22,7 @@
       var value = c[keys[i]];
       if (typeof value !== "string" || !value || /YOUR_|REPLACE_|xxxxx/i.test(value)) return false;
     }
-    return true;
+    return c.projectId === "english-subject-ket" && c.appId === ENGLISH_APP_ID;
   }
 
   function userOf(user) {

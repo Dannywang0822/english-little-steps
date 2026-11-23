@@ -1,23 +1,58 @@
-// EMULATOR TEST WRAPPER. NOT a replacement for production rules.
-// It does not include Portfolio Tracker matches. Do not deploy this file.
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /meta/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /cards/{chunkId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /logs/{logId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /sentences/{sentId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // PROTOTYPE ONLY. Do not deploy this file by itself.
+    // Paste these helpers and the englishLittleSteps match into
+    // match /databases/{database}/documents, beside the existing matches.
+    // The published file is firebase/published/firestore.rules. It contains
+    // /users/{userId} plus meta, cards, logs, and sentences. Leave that text
+    // unchanged. Do not add a catch-all deny. Names are prefixed els*.
+    //
+    // Path: englishLittleSteps/{userId}
+    // One document per Firebase Auth uid. No email, token, or other collection's data.
+    // Reviewed prototype for english-subject-ket. Not deployed.
+
     function elsSignedIn() {
       return request.auth != null;
     }
+
     function elsOwner(userId) {
       return elsSignedIn() && request.auth.uid == userId;
     }
+
     function elsKeysOk() {
       return request.resource.data.keys().hasOnly([
         "schemaVersion", "app", "uid", "state", "logs", "tts", "updatedAtMs"
       ]);
     }
-    // Same checks as the fragment. Rules cannot walk each card.
+
+    // `let` needs rules_version = '2'. Paste this only into a file that already says that.
     function elsDateShape(value) {
       return value is string && value.size() == 10 && value.matches("^\\d{4}-\\d{2}-\\d{2}$");
     }
+
+    // Rules cannot loop over map values, so each card's due date and types are
+    // checked by js/progress-transfer.js before import. An owner who skips the
+    // client can still store a bad card inside their own document. That does not
+    // let them read another uid or change ownership. Impossible dates such as
+    // 2026-02-31 also match the shape check below.
     function elsStateOk() {
       let s = request.resource.data.state;
       return s.keys().hasOnly([
@@ -41,6 +76,7 @@ service cloud.firestore {
         && (!("allLitCelebrated" in s) || s.allLitCelebrated is bool)
         && (!("_litSeeded" in s) || s._litSeeded is bool);
     }
+
     function elsValidBundle(userId) {
       return elsKeysOk()
         && request.resource.data.schemaVersion == 1
@@ -57,11 +93,13 @@ service cloud.firestore {
         && request.resource.data.updatedAtMs > 0
         && request.resource.size() < 900000;
     }
+
     function elsIdentityUnchanged() {
       return request.resource.data.uid == resource.data.uid
         && request.resource.data.app == resource.data.app
         && request.resource.data.schemaVersion == resource.data.schemaVersion;
     }
+
     match /englishLittleSteps/{userId} {
       allow read: if elsOwner(userId);
       allow create: if elsOwner(userId) && elsValidBundle(userId);
@@ -70,3 +108,5 @@ service cloud.firestore {
     }
   }
 }
+
+

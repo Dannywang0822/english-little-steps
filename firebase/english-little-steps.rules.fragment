@@ -1,12 +1,13 @@
 // PROTOTYPE ONLY. Do not deploy this file by itself.
-// Paste the helpers and the match /englishLittleSteps block INTO the existing
-// match /databases/{database}/documents block. Do not delete Portfolio Tracker
-// or any other match. Do not add a catch-all deny. Names are prefixed els*
-// so they do not replace existing helper functions.
+// Paste these helpers and the englishLittleSteps match into
+// match /databases/{database}/documents, beside the existing matches.
+// The published file is firebase/published/firestore.rules. It contains
+// /users/{userId} plus meta, cards, logs, and sentences. Leave that text
+// unchanged. Do not add a catch-all deny. Names are prefixed els*.
 //
 // Path: englishLittleSteps/{userId}
-// One document per Firebase Auth uid. No email, token, or other app's data.
-// Reviewed prototype for english-subject-ket STANDARD Firestore. Not deployed.
+// One document per Firebase Auth uid. No email, token, or other collection's data.
+// Reviewed prototype for english-subject-ket. Not deployed.
 
 function elsSignedIn() {
   return request.auth != null;
