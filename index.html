@@ -1393,7 +1393,9 @@
           var mode=SaturdayClub.storyMode();
           if(mode) epN=mode.ep;
         }
-        if(epN) prefer=SaturdayClub.preferPracticeChunks(epN)||[];
+        if(epN && SaturdayClub.pickOptionalPractice && SaturdayClub.optionalPracticePool(epN).length){
+          prefer=SaturdayClub.promptsForPractice(epN, SaturdayClub.pickOptionalPractice(epN))||[];
+        } else if(epN) prefer=SaturdayClub.preferPracticeChunks(epN)||[];
         flow.preferClubEpisode=null;
       }
       pool=topicChunks(state.topicId,0).filter(function(ch){ var c=state.cards[ch.id]; return c&&c.seen&&!ch.awl; });
@@ -1426,7 +1428,7 @@
         '<div class="hint-box">可以模仿：<strong>'+ch.example+'</strong>'+spk(ch.example)+'<br>发音：'+ch.lemma+' '+(ch.phonetic||"")+spk(ch.lemma)+'</div>'+
         '<textarea id="open-text" style="margin-top:10px" placeholder="写一句短短的英文（至少 3 个词）"></textarea>'+
         '<div class="label" style="margin-top:8px">词库（点一下加入）</div>'+
-        '<div class="bank" id="wbank">'+(ch.wordBank||[]).map(function(w){return '<button type="button">'+w+'</button>';}).join("")+'</div>'+
+        '<div class="bank" id="wbank">'+((window.SaturdayClub&&SaturdayClub.shuffleWordBank?SaturdayClub.shuffleWordBank(ch.wordBank||[]):shuffle(ch.wordBank||[]))).map(function(w){return '<button type="button">'+w+'</button>';}).join("")+'</div>'+
         '<div class="hint-box">记得用上：'+hints+'</div>'+
         '<div class="feedback" id="open-fb"></div>'+
         '<div class="btn-row"><button type="button" class="btn btn-ghost" id="open-hint">看例句</button><button type="button" class="btn btn-primary" id="open-check">自检</button></div>'+

@@ -26,6 +26,20 @@
   }
   function escapeRe(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 
+  /* Keep repeated tokens. Order is for tapping, never the answer order. */
+  function shuffleWordBank(list, rng) {
+    var a = (list || []).slice();
+    var rand = typeof rng === "function" ? rng : Math.random;
+    var i, j, t;
+    for (i = a.length - 1; i > 0; i--) {
+      j = Math.floor(rand() * (i + 1));
+      t = a[i];
+      a[i] = a[j];
+      a[j] = t;
+    }
+    return a;
+  }
+
   function todayStr() {
     if (todayOverride) return todayOverride;
     if (hooks.todayStr) return hooks.todayStr();
@@ -106,12 +120,15 @@
     return (e && e.coverLearnDates) || [];
   }
   function isCoverDay(dateStr) {
-    var i, dates;
+    var i, dates, fin, hit = null;
     for (i = 1; i <= slots(); i++) {
       dates = coverDates(i);
-      if (dates.indexOf(dateStr) !== -1) return i;
+      if (dates.indexOf(dateStr) !== -1) hit = i;
+      fin = finishedAt(i);
+      /* Story day and the next Shanghai calendar day, even if cover dates were not stored. */
+      if (fin && (dateStr === fin || dateStr === addDays(fin, 1))) hit = i;
     }
-    return null;
+    return hit;
   }
 
   /* {type:'read', ep} | {type:'recap', ep} | null */
@@ -164,7 +181,13 @@
         matchers.push({ id: ch.id, kind: "new", text: s });
       });
     });
+    /* recycledIds are lookup hints for this story. They never become new cards.
+       A chunk introduced in this episode keeps kind "new" even if a later story lists the same id. */
+    var hints = ep.recycledIds;
+    var useHints = !!(hints && hints.length);
     (data.recycled || []).forEach(function (ch) {
+      if (lex[ch.id]) return;
+      if (useHints && hints.indexOf(ch.id) === -1) return;
       lex[ch.id] = { kind: "recycled", item: ch };
       (ch.surface || [ch.lemma]).forEach(function (s) {
         matchers.push({ id: ch.id, kind: "recycled", text: s });
@@ -254,7 +277,7 @@
     var due = addDays(t, hooks.INTERVALS[0] || 1);
     (ep.chunks || []).forEach(function (ch) {
       var card = hooks.ensureCard(ch.id);
-      if (card.seen) return; /* already in review: do not reset */
+      if (card.seen) return; /* already learned: review only, never reset SRS or mark as new */
       card.seen = true;
       card.relearn = null;
       card.intervalIdx = 0;
@@ -290,6 +313,38 @@
     });
     var out = [];
     order.forEach(function (id) { if (byId[id]) out.push(byId[id]); });
+    return out;
+  }
+
+  /* Episodes 6–30 ship six practice sentences as an optional pool.
+     One sitting uses a few of them; check-in still uses the original sentence count. */
+  var PRACTICE_POOL_CAP = 3;
+  function optionalPracticePool(n) {
+    var ep = episode(n);
+    if (!ep || +n < 6) return [];
+    return (ep.practice || []).slice();
+  }
+  function pickOptionalPractice(n, rng) {
+    var pool = optionalPracticePool(n);
+    if (!pool.length) return [];
+    return shuffleWordBank(pool, rng).slice(0, PRACTICE_POOL_CAP);
+  }
+  function promptsForPractice(n, items) {
+    var ep = episode(n);
+    var chunks = (ep && ep.chunks) || [];
+    var out = [];
+    (items || []).forEach(function (p) {
+      var ch = null;
+      var i;
+      for (i = 0; i < chunks.length; i++) {
+        if (chunks[i].example === p.target) { ch = chunks[i]; break; }
+      }
+      if (!ch) return;
+      var copy = Object.assign({ topicId: "saturday-club", topicName: "周六俱乐部" }, ch);
+      copy.wordBank = (p.wordBank || ch.wordBank || []).slice();
+      copy.example = p.target;
+      out.push(copy);
+    });
     return out;
   }
 
@@ -329,7 +384,7 @@
         '<div class="blurb">' + esc(c.blurbEn) + "<br>" + esc(c.blurbZh) + "</div></div>";
     }).join("");
     var current = "";
-    var i, done, unlocked, has, label, cls, btn;
+    var i, done, unlocked, has, cls, btn;
     for (i = 1; i <= slots(); i++) {
       has = hasContent(i);
       done = isFinished(i);
@@ -348,16 +403,28 @@
     if (!current) {
       current = '<p class="hint-line">现在还没有可以读的新故事。先用原来的主题新学，等下一篇写好并到解锁日再来。</p>';
     }
-    var locked = "";
+    var waiting = "";
+    var coming = "";
     for (i = 1; i <= slots(); i++) {
       if (hasContent(i) && (isUnlocked(i) || isFinished(i))) continue;
-      locked += '<div class="week-locked"><span>Weekend ' + i + '</span><span class="soon">即将推出</span></div>';
+      if (hasContent(i)) {
+        var epw = episode(i);
+        var fin = i > 1 ? finishedAt(i - 1) : null;
+        var when = fin ? ("最早 " + addDays(fin, 2)) : "先读完上一篇";
+        waiting += '<div class="week-locked" data-waiting="' + i + '"><span class="wk-name">Weekend ' + i +
+          " · " + esc(epw.titleEn) + "<br>《" + esc(epw.titleZh) + "》</span><span class=\"soon\">" +
+          esc(when) + "</span></div>";
+      } else {
+        coming += '<div class="week-locked" data-soon="' + i + '"><span>Weekend ' + i +
+          '</span><span class="soon">即将推出</span></div>';
+      }
     }
     $("club-main").innerHTML =
-      '<div class="card-block"><div class="label">三位同学</div><div class="chars">' + chars + "</div></div>" +
+      '<div class="card-block"><div class="label">故事人物</div><div class="chars">' + chars + "</div></div>" +
       '<div class="card-block"><div class="label">可以阅读</div>' + current + "</div>" +
-      '<div class="card-block"><div class="label">即将推出</div><div class="slot-list">' + locked + "</div>" +
-      '<p class="series-note">' + esc(data.seriesNote || "") + "</p></div>" +
+      (waiting ? '<div class="card-block"><div class="label">已写好，还没到解锁日</div><div class="slot-list">' + waiting + "</div></div>" : "") +
+      (coming ? '<div class="card-block"><div class="label">即将推出</div><div class="slot-list">' + coming + "</div></div>" : "") +
+      (data.seriesNote ? '<p class="series-note">' + esc(data.seriesNote) + "</p>" : "") +
       '<button type="button" class="btn btn-ghost btn-full" id="club-home" style="margin-top:12px">回首页</button>';
   }
 
@@ -391,7 +458,7 @@
     var ep = episode(episodeN);
     var q = ep.questions[qIndex];
     $("club-main").innerHTML =
-      '<div class="notice">读后三问是可选的，不影响复习和打卡。</div>' +
+      '<div class="notice">读后三问是可选的，不影响复习和打卡。参考答案不是唯一答案，不用写得一模一样。</div>' +
       '<div class="card-block"><div class="label">读后三问 ' + (qIndex + 1) + " / 3</div>" +
         "<h2 class=\"scene-title\">" + esc(q.q) + "</h2>" +
         '<p class="hint-line">' + esc(q.qZh) + "</p>" +
@@ -428,8 +495,11 @@
     var ep = episode(episodeN) || {};
     $("club-main").innerHTML =
       '<div class="card-block end-card"><h2>读完啦 🎉</h2>' +
-        '<p class="hint-line">你读完了《' + esc(ep.titleZh || "") + "》。本篇新词已经进入复习，明天就会到期。</p>" +
-        '<div class="end-note">读完故事，今天和明天的「新学」都算完成，不用再滑这批新卡。接下来去做现有的词库造句（会优先本篇目标词）。</div>' +
+        '<p class="hint-line">你读完了《' + esc(ep.titleZh || "") + "》。" +
+          (first
+            ? "还没学过的新词已经进入复习，明天就会到期。以前学过的只按原来的间隔复习。"
+            : "这篇你读过了，复习间隔不变。") + "</p>" +
+        '<div class="end-note">读完故事，今天和明天的「新学」都算完成，不用再滑这批新卡。读后三问和复述可以跳过，不影响打卡。接下来去做现有的词库造句（会优先本篇目标词）。</div>' +
         '<button type="button" class="btn btn-primary btn-full" id="club-go-practice" style="margin-top:14px">去做造句</button>' +
         '<button type="button" class="btn btn-ghost btn-full" id="club-back-hub" style="margin-top:8px">返回封面</button></div>';
     return first;
@@ -633,13 +703,19 @@
     if (mode && mode.type === "recap") {
       return "本篇新词已在故事里学过 · 可做 2 分钟回顾";
     }
-    var unread = currentUnread();
-    if (!unread) {
-      var last = 1;
-      while (last <= slots() && isFinished(last)) last++;
-      last = last - 1;
-      if (last >= 1 && isFinished(last)) {
-        return "已读完 Weekend " + last + "。下一篇还没推出，今天可以按原来的主题新学。";
+    var nextN = 1;
+    while (nextN <= slots() && isFinished(nextN)) nextN++;
+    if (nextN > slots() && isFinished(slots())) {
+      return "30 篇都读完了。今天可以按原来的主题新学。";
+    }
+    if (nextN > 1 && nextN <= slots()) {
+      if (!hasContent(nextN)) {
+        return "已读完 Weekend " + (nextN - 1) + "。下一篇还没推出，今天可以按原来的主题新学。";
+      }
+      if (!isUnlocked(nextN)) {
+        var fin = finishedAt(nextN - 1);
+        var when = fin ? addDays(fin, 2) : "";
+        return "已读完 Weekend " + (nextN - 1) + "。下一篇" + (when ? " " + when : "") + " 解锁。今天可以按原来的主题新学。";
       }
     }
     var ep1 = episode(1) || {};
@@ -695,6 +771,10 @@
     finishedAt: finishedAt,
     coverDates: coverDates,
     preferPracticeChunks: preferPracticeChunks,
+    optionalPracticePool: optionalPracticePool,
+    pickOptionalPractice: pickOptionalPractice,
+    promptsForPractice: promptsForPractice,
+    practicePoolCap: function () { return PRACTICE_POOL_CAP; },
     markEpisodeFinished: markEpisodeFinished,
     openHub: openHub,
     openStory: openStory,
@@ -703,6 +783,13 @@
     entryText: entryText,
     todayStr: todayStr,
     setToday: function (d) { todayOverride = d || null; }, /* tests only */
+    shuffleWordBank: shuffleWordBank,
+    lexKinds: function (n) {
+      buildLex(n);
+      var out = {};
+      Object.keys(lex).forEach(function (id) { out[id] = lex[id].kind; });
+      return out;
+    },
     slots: slots,
     episode: episode,
     data: function () { return data; }
