@@ -4,12 +4,13 @@
 
 ## 在线打开
 
-三个入口如下。后两个是同一套腾讯云 CloudBase 静态托管，也就是国内主站（没有另外一个独立的国内镜像站）。
+三个入口如下。GitHub Pages 用 Firebase。自建门户用门户自己的登录，不走 CloudBase。CloudBase 静态托管仍只在 `tcloudbaseapp.com` 这个主机名上。
 
 | 入口 | 地址 | 说明 |
 |---|---|---|
-| GitHub Pages | https://dannywang0822.github.io/english-little-steps/ | 展示 / 备份；体验版下云端登录可能不可用，游客可学 |
-| CloudBase 主站（国内端） | https://english-little-steps-d0a2b84764b-1408940790.tcloudbaseapp.com/ | 大陆直连，邮箱登录与进度同步用这个 |
+| GitHub Pages | https://dannywang0822.github.io/english-little-steps/ | Firebase 邮箱密码。不走 CloudBase，也不走门户 |
+| 自建门户（国内） | http://43.142.236.188/apps/english-little-steps/ | 先在门户登录。进度走 `/api/els/progress`，可选练习走 `/api/els/chat` |
+| CloudBase 静态托管 | https://english-little-steps-d0a2b84764b-1408940790.tcloudbaseapp.com/ | 只有这个主机名继续用 CloudBase 邮箱验证码 |
 
 手机浏览器直接打开即可；电脑可用 Chrome 开发者工具切换手机模式（约 390×844）。
 
@@ -19,7 +20,7 @@
 
 - 这是同一世界观里的周末短篇系列，帮助孩子用已学词块读完整故事。
 - **节奏**：每两天一篇，KET 季先排 **30 篇**（约两个月）。第 1 篇打开就能读。之后每一篇都要上一篇已经读完，并且完成日按 **Asia/Shanghai** 再过两个自然日（读完当天是 D，最早 D+2）才解锁；没有正文的篇目不解锁。读得慢也不会一次放出积压的好几篇。读过的可以随时再读。
-- **第 1–30 篇故事已在 GitHub Pages 和 CloudBase 正式站发布。** 顺序解锁不变（D → D+2，Asia/Shanghai）。这条分支准备国内站继续用 CloudBase、GitHub Pages 用 Firebase 邮箱密码。公开网页配置已放进仓库供审阅；现有 Pages 流水线只在推送到 `main` 时上传 git 树，所以合并之前 Pages 仍不会连上 Firebase，也不会去连 CloudBase。两个云不会自动互相同步，相同邮箱也不等于同一个账号。还没有部署。
+- **第 1–30 篇故事已在 GitHub Pages 和 CloudBase 正式站发布。** 顺序解锁不变（D → D+2，Asia/Shanghai）。GitHub Pages 用 Firebase 邮箱密码。`43.142.236.188`、`*.dannywang.cloud`，以及路径 `/apps/english-little-steps/`，用自建门户，不用 CloudBase。`tcloudbaseapp.com` 仍是 CloudBase。公开网页配置已放进仓库供审阅；现有 Pages 流水线只在推送到 `main` 时上传 git 树，所以合并之前 Pages 仍不会连上 Firebase，也不会去连 CloudBase。Pages、CloudBase、门户不会自动互相同步，相同邮箱也不等于同一个账号。还没有部署。
 - 30 篇有正文也不等于可以连着读完：下一篇仍然要等上一篇读完，并且按上海时区再过两个自然日才解锁。
 - 第 6–30 篇每篇另有 6 句可选拼句，放在原来的造句里抽几句用，不要求 6 句全部做完，也不单独算一项打卡。理解题只给参考答案，不按逐字对错计分。
 - 人物名用英文：**Leo / Mia / Jay**，第 2 篇起有同校学生 **Alex**，第 4 篇有配角 **Ben**（两个同名男孩不分开记）。中文里也用英文名，不另起中文名。
@@ -92,11 +93,55 @@ python3 -m http.server 8765
 - 点 🔊 不会触发左右滑卡（按下事件不再往卡片传，滑卡逻辑也会忽略从 🔊 上开始的拖动）。朗读不计入 40 分钟时长。
 
 
-## 云端同步（腾讯云 CloudBase · 大陆直连）
+## 自建门户（国内，非 GitHub Pages）
+
+页面在下面任一情况会走门户，不加载 CloudBase，也不出现验证码注册：
+
+- 主机名是 `43.142.236.188`
+- 主机名是 `dannywang.cloud` 或其子域
+- 路径是 `/apps/english-little-steps/`（`github.io` 除外，Pages 始终是 Firebase）
+- 本机调试：地址加上 `?portal=1`，或在脚本前设置 `window.__ELS_PORTAL__ = true`
+
+登录用门户已有的邮箱密码和 cookie。应用不再做第二套登录。同一来源请求带上 cookie：
+
+| 方法 | 路径 | 含义 |
+|---|---|---|
+| GET | `/api/els/progress` | 200：`{ state, logs, tts, updatedAt, updatedAtMs }`，形状与原来的 `user_bundles` 相同。401：未登录。404 且是 JSON：还没有进度。HTML 404 视为接口未开，进度留在本机 |
+| PUT | `/api/els/progress` | 同一份 JSON。页面约 1.5 秒防抖后提交。身份和时间由服务端写入。服务端应创建或覆盖，不要把 PUT 的 404 当成空进度 |
+| POST | `/api/els/chat` | `{ messages, practice }`。200：`{ reply }`。`messages` 里第一条是系统提示，后面只带最近几轮。`practice` 是给服务端校对范围用的，见下文 |
+
+可选字段：GET 可以多给一个不含孩子姓名的 `uid`（字母、数字、`_`、`-`）。页面不发送密码、TokenHub 或 CloudBase 密钥。
+
+门户登录页默认是同源 `/login`。如果实际路径不同，在页面脚本之前设置 `window.__ELS_PORTAL_LOGIN__ = "/你的登录路径"`（必须以 `/` 开头，不能是别的网站）。
+
+第一次同步仍会问是否把本机进度导入或合并到这个门户账号。CloudBase 旧账号不会迁过来。选过「游客继续」的浏览器会一直只存本机，直到点「停止同步」再刷新。
+
+### 可选练习
+
+首页打卡下面有「可选英语练习」。它不是第五项打卡。一次大约 10 轮或 8 分钟。三种用法：改写贴上的一句、只用已经学过的词块、或只练已解锁的周六俱乐部故事。人物只用 Leo、Mia、Jay、Alex、Sam、Ms. Reed。
+
+服务端应使用下面这段系统提示（页面也会放在 `messages[0]`）。如果服务端换成自己的副本，请保留 `Practice context` 里的模式、词块或故事标题：
+
+```
+You are a KET/A2 English practice partner for a child. Use American English. Keep each reply to 1–3 sentences. First recast the child's sentence more naturally. Point out only one key grammar or collocation issue per turn. Give one immediately imitable rewrite. A short Chinese explanation is allowed. In situational or role-play mode, recast with you, not I. In correction mode, you may recast in the first person. Use only these characters: Leo, Mia, Jay, Alex, Sam, Ms. Reed. Do not invent characters. Do not use the child's real name. If you are unsure of a usage, do not teach it. Stay inside the practice context: learned chunks, one unlocked Saturday Club scenario, or one pasted sentence. This is optional practice, not an open chatbot and not a daily check-in.
+```
+
+`practice.mode` 为 `rewrite`、`chunks` 或 `scenario`。情景模式用 you 改写；改写和词块模式可以用 I。
+
+### 门户接口部署后怎么试
+
+1. 用门户账号登录，打开 http://43.142.236.188/apps/english-little-steps/ 。
+2. 登录页不应再出现「发送验证码」或 CloudBase。已登录时应直接进入，底部状态是「已登录 · 门户」。
+3. 学一张卡，等约两秒。再看 `GET /api/els/progress` 是否带回刚才的进度。换一台已登录的浏览器，应能合并或拉下这份进度。
+4. 未登录时打开接口应得到 401，页面给出门户登录链接，并仍可「游客继续」。
+5. 打开「可选英语练习」，贴一句 `I get up at seven.`。回复应是一两句改写，不是开放聊天。连发到第 10 轮或满 8 分钟后，输入会被停住，打卡四行不变。
+6. 打开 https://dannywang0822.github.io/english-little-steps/ ，确认仍是 Firebase 邮箱密码，没有门户练习块。
+
+## 云端同步（腾讯云 CloudBase · 仅 tcloudbaseapp.com）
 
 未配置时应用自动走 **纯 localStorage**。配置 `cloudbase-config.js` 后可用邮箱注册/登录，进度同步到 CloudBase 文档库。
 
-> 国内站继续用 CloudBase。GitHub Pages 用 Firebase 的准备在这条分支里。`firebase-config.js` 是 English Little Steps 那个 Web app 的公开配置，不是服务账号。`.github/workflows/pages.yml` 没有改：推送到 `main` 时 checkout 仓库并上传 `path: .`，没有构建步骤。文件进了 git 之后，下一次合并到 `main` 才会被现有流水线带上。这次不合并、不发布。不要把网页配置放进 Actions secrets。登录方式和授权域名这次没有读取。
+> `tcloudbaseapp.com` 继续用 CloudBase。自建门户不使用下面这套验证码。GitHub Pages 用 Firebase 的准备在这条分支里。`firebase-config.js` 是 English Little Steps 那个 Web app 的公开配置，不是服务账号。`.github/workflows/pages.yml` 没有改：推送到 `main` 时 checkout 仓库并上传 `path: .`，没有构建步骤。文件进了 git 之后，下一次合并到 `main` 才会被现有流水线带上。这次不合并、不发布。不要把网页配置放进 Actions secrets。登录方式和授权域名这次没有读取。
 
 ### 一次性配置（Danny / HR）
 
