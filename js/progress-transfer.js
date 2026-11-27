@@ -6,7 +6,7 @@
   var SCHEMA = 1;
   var MAX_BYTES = 900000;
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-  var BACKENDS = { local: 1, cloudbase: 1, firebase: 1 };
+  var BACKENDS = { local: 1, cloudbase: 1, firebase: 1, portal: 1 };
   var FORBIDDEN = /password|token|secret|apikey|credential|authorization|serviceaccount|session/i;
   var DANGEROUS = { __proto__: 1, constructor: 1, prototype: 1 };
 

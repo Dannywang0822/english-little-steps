@@ -223,9 +223,26 @@
     .pin-fold{margin-top:12px;border-top:1px dashed var(--border);padding-top:10px}
     .pin-fold summary{font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
     .sync-dot{font-size:11px;color:var(--muted);margin-top:6px}
+    .login-card a.btn{display:block;text-decoration:none;text-align:center;margin-top:8px}
+    html.portal-host #tab-login,html.portal-host #tab-register,html.portal-host #pane-login,html.portal-host #pane-register{display:none!important}
+    html.portal-host #portal-gate{display:block!important}
+    #portal-gate{margin-bottom:12px}
+    .ai-modes{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+    .ai-modes button{flex:1;min-width:90px;border:1.5px solid var(--border);background:var(--bg);border-radius:12px;padding:8px 6px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;color:var(--text)}
+    .ai-modes button.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
+    .ai-scenario{display:block;font-size:12px;color:var(--muted);margin-bottom:8px}
+    .ai-scenario[hidden]{display:none!important}
+    .ai-scenario select{display:block;width:100%;margin-top:4px;font-family:inherit;font-size:16px;padding:8px;border-radius:12px;border:1.5px solid var(--border);background:#fff}
+    #ai-practice textarea{width:100%;min-height:72px;border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;font-family:inherit;font-size:16px;resize:vertical}
+    .ai-log{max-height:220px;overflow:auto;margin-top:10px}
+    .ai-log p{font-size:13px;margin:6px 0;padding:8px 10px;border-radius:12px;background:#fff;border:1px solid var(--border);white-space:pre-wrap}
+    .ai-log p.ai{background:var(--primary-soft);border-color:transparent}
+    .ai-note{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
     body.locked #home{display:none}
     footer{text-align:center;padding:18px;font-size:11px;color:#b0b8c8}
   </style>
+  <script src="js/host-backend.js"></script>
+  <script>if(window.HostBackend&&HostBackend.select()==="portal")document.documentElement.classList.add("portal-host");</script>
 </head>
 <body class="locked">
   <div class="login" id="login">
@@ -241,7 +258,11 @@
       </div>
 
       <div class="auth-pane on" id="pane-guest">
-        <p class="auth-hint">不注册也能学：进度只存在这台设备的浏览器里。换手机或清缓存会丢进度。</p>
+        <div id="portal-gate" hidden>
+          <p class="auth-hint" id="portal-hint">这个地址使用门户登录。请先在门户用邮箱和密码登录，再回到这里。这里不注册 CloudBase，也不发验证码。</p>
+          <a class="btn btn-primary btn-full" id="portal-login-link" href="/login">去门户登录</a>
+        </div>
+        <p class="auth-hint" id="guest-hint">不注册也能学：进度只存在这台设备的浏览器里。换手机或清缓存会丢进度。</p>
         <button type="button" class="btn btn-primary btn-full" id="btn-guest">以游客身份开始 🚀</button>
         <details class="pin-fold" id="pin-fold">
           <summary>家长本地锁（可选，非云端安全）</summary>
@@ -297,6 +318,12 @@
         <div class="t">📖 周六俱乐部</div>
         <div class="d" id="club-entry-sub">Weekend 1 · The Message on the Board</div>
       </button>
+    </section>
+
+    <section id="ai-practice" hidden>
+      <div class="sec-h"><h2>可选英语练习</h2><span class="hint">不算打卡</span></div>
+      <p class="ck-topic-note">用已经学过的词块、已解锁的周六俱乐部故事，或贴一句让它改写。不是第五项打卡，也不是开放聊天。</p>
+      <div id="ai-practice-root"></div>
     </section>
 
     <section>
@@ -415,17 +442,20 @@
   <script src="js/sentence-grammar.js"></script>
   <script src="js/wordnet.js"></script>
   <script src="js/cloud-sync.js"></script>
-  <script src="js/host-backend.js"></script>
   <script src="js/progress-transfer.js"></script>
   <script src="js/firebase-progress.js"></script>
+  <script src="js/portal-progress.js"></script>
+  <script src="js/portal-practice.js"></script>
   <script>
   (function(){
     "use strict";
     var DATA = window.__TOPICS__;
     function cloudApi(){
       if(window.HostBackend && HostBackend.select()==="firebase" && window.FirebaseProgress) return FirebaseProgress;
+      if(window.HostBackend && HostBackend.select()==="portal" && window.PortalProgress) return PortalProgress;
       return window.KetCloud;
     }
+    function isPortalHost(){ return window.HostBackend && HostBackend.select()==="portal"; }
     var INTERVALS = [1,3,7,14,30,60];
     var NEW_CAP = 12;               /* normal daily new-card cap */
     var NEW_CAP_SHARED = false;     /* true: shared daily cap; false: 12 per topic (Danny chose) */
@@ -1596,10 +1626,26 @@
     document.querySelectorAll(".auth-tabs button").forEach(function(b){
       b.addEventListener("click", function(){ setAuthTab(b.getAttribute("data-tab")); });
     });
+    function mountPortalPractice(){
+      if(!isPortalHost() || !window.PortalPractice) return;
+      var box=document.getElementById("ai-practice");
+      var root=document.getElementById("ai-practice-root");
+      if(!box || !root) return;
+      box.hidden=false;
+      PortalPractice.mount(root, {
+        getState: function(){ return state; },
+        topics: DATA.topics,
+        club: function(){ return window.SaturdayClub; },
+        clubData: function(){ return window.__SATURDAY_CLUB__; }
+      });
+    }
     function enterApp(){
       document.body.classList.remove("locked");
       document.getElementById("login").style.display="none";
       if(!booted){ booted=true; load(); bindSaturdayClub(); renderTopics(); refreshHome(); } else refreshHome();
+      mountPortalPractice();
+      var out=document.getElementById("btn-logout");
+      if(out && isPortalHost() && cloudApi() && cloudApi().mode==="cloud") out.textContent="停止同步";
     }
     function showLogin(){
       document.body.classList.add("locked");
@@ -1678,6 +1724,7 @@
 
 
     function cloudUnavailableReason(){
+      if(isPortalHost()) return (window.PortalProgress && PortalProgress.lastError) || "请先在门户登录。这个地址不使用 CloudBase。";
       if(window.HostBackend && HostBackend.select()==="firebase") return (window.FirebaseProgress && FirebaseProgress.lastError) || "GitHub Pages 使用 Firebase。网页配置还没放上时，进度只在本机。";
       if(window.KetCloud && cloudApi().lastError) return "云端未就绪："+cloudApi().lastError;
       if(window.KetCloud && cloudApi().ready && !cloudApi().enabled) return "云端未就绪，请刷新后重试，或先用「游客继续」";
@@ -1706,8 +1753,13 @@
       setSyncStatus("云端同步中…");
       return cloudApi().syncAfterLogin().then(function(){
         enterApp();
-        toast("已登录云端，进度会自动同步 ☁️");
-        setSyncStatus("已登录 · "+(user.email||"云端"));
+        if(isPortalHost()){
+          toast("已连上门户，进度会自动同步");
+          setSyncStatus("已登录 · 门户");
+        } else {
+          toast("已登录云端，进度会自动同步 ☁️");
+          setSyncStatus("已登录 · "+(user.email||"云端"));
+        }
       }).catch(function(err){
         console.warn(err);
         enterApp();
@@ -1793,7 +1845,8 @@
       msg.textContent="";
       try{
         var scope=currentScope();
-        var text=ProgressTransfer.buildExport(localBundle(), { backend: scope.backend==="firebase"||scope.backend==="cloudbase" ? scope.backend : "local", uid: scope.uid });
+        var named=scope.backend==="firebase"||scope.backend==="cloudbase"||scope.backend==="portal";
+        var text=ProgressTransfer.buildExport(localBundle(), { backend: named ? scope.backend : "local", uid: scope.uid });
         var blob=new Blob([text], { type: "application/json" });
         var a=document.createElement("a");
         a.href=URL.createObjectURL(blob);
@@ -1855,18 +1908,21 @@
     };
 
     document.getElementById("btn-logout").onclick=function(){
-      var finish=function(){
+      var finish=function(portalCloud){
         try{ localStorage.removeItem(AUTH_KEY); sessionStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_MODE_KEY); sessionStorage.removeItem(AUTH_MODE_KEY);}catch(e){}
-        showLogin(); setAuthTab("guest"); setSyncStatus(""); toast("已退出");
+        showLogin(); setAuthTab("guest"); setSyncStatus("");
+        toast(portalCloud ? "已停止同步。门户登录还在，要换账号请到门户退出。" : "已退出");
       };
+      var portalCloud=isPortalHost() && cloudApi() && cloudApi().mode==="cloud";
       if(window.KetCloud && cloudApi().enabled && cloudApi().mode==="cloud"){
         setSyncStatus("正在保存并退出…");
-        cloudApi().logout().then(finish).catch(finish);
-      } else finish();
+        cloudApi().logout().then(function(){ finish(portalCloud); }).catch(function(){ finish(portalCloud); });
+      } else finish(false);
     };
 
-    if(window.KetCloud){
-      cloudApi().configureHooks({
+    var bootApi=cloudApi();
+    if(bootApi && bootApi.configureHooks){
+      bootApi.configureHooks({
         getLocalBundle: localBundle,
         applyMerged: applyCloudBundle,
         confirmImport: function(msg){ return window.confirm(msg); },
@@ -1884,6 +1940,17 @@
         else { b.textContent="本机学习"; b.classList.add("off"); }
         if(loginHint) loginHint.textContent = on ? "邮箱和密码登录这个 Firebase 账号。不会连到 CloudBase，也不会自动合并另一个云。" : cloudUnavailableReason();
         if(regHint) regHint.textContent = on ? "用邮箱和密码注册。这里不发 CloudBase 验证码。" : cloudUnavailableReason();
+        return;
+      }
+      if(isPortalHost()){
+        if(on){ b.textContent="门户已登录"; b.classList.remove("off"); }
+        else { b.textContent="请先登录门户"; b.classList.add("off"); }
+        var portalHint=document.getElementById("portal-hint");
+        if(portalHint){
+          var why=on ? "进度会同步到这个门户账号。这里没有 CloudBase 注册，也不发验证码。" : cloudUnavailableReason();
+          if(!on && why.indexOf("CloudBase")===-1) why+=" 这个地址不使用 CloudBase，也不发验证码。";
+          portalHint.textContent=why;
+        }
         return;
       }
       if(on){ b.textContent="云端已就绪"; b.classList.remove("off"); }
@@ -1911,7 +1978,24 @@
       var crErr=document.getElementById("cr-err"); if(crErr){ crErr.innerHTML=mirrorNote; }
     }
 
+    function preparePortalChrome(){
+      if(!isPortalHost()) return;
+      document.documentElement.classList.add("portal-host");
+      ["tab-login","tab-register","pane-login","pane-register"].forEach(function(id){
+        var el=document.getElementById(id);
+        if(el && el.parentNode) el.parentNode.removeChild(el);
+      });
+      var gate=document.getElementById("portal-gate");
+      if(gate) gate.hidden=false;
+      var guestHint=document.getElementById("guest-hint");
+      if(guestHint) guestHint.textContent="不登录门户也能在这台设备上学，进度只留在本机。要同步进度，请先到门户登录。";
+      var link=document.getElementById("portal-login-link");
+      if(link && HostBackend.portalLoginPath){
+        link.href=HostBackend.portalLoginPath()+"?next="+encodeURIComponent(location.pathname+location.search+location.hash);
+      }
+    }
     function bootAuth(){
+      preparePortalChrome();
       var remembered=null;
       try{ remembered=localStorage.getItem(AUTH_KEY)||sessionStorage.getItem(AUTH_KEY); }catch(e){}
       /* headless / returning guest or PIN */
@@ -1934,6 +2018,23 @@
           updateCloudBadge(false);
           setCloudAuthUi(true, false);
           showLogin();
+        });
+        return;
+      }
+
+      if(window.HostBackend && HostBackend.select()==="portal"){
+        setCloudAuthUi(false, false);
+        PortalProgress.bootstrap().then(function(on){
+          updateCloudBadge(!!on);
+          if(on && PortalProgress.currentUser()) return afterCloudAuth(PortalProgress.currentUser());
+          setCloudAuthUi(true, false);
+          showLogin();
+          setAuthTab("guest");
+        }).catch(function(){
+          updateCloudBadge(false);
+          setCloudAuthUi(true, false);
+          showLogin();
+          setAuthTab("guest");
         });
         return;
       }
